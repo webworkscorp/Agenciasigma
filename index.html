@@ -1,0 +1,2126 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DSO // SECURE OS</title>
+<script>
+// Intentionally left empty or removed the fetch polyfill attempt
+</script>
+<style>
+:root{--bg:#080808;--bg-d:#0a0a0a;--bg-p:#0d0d0d;--bg-c:#111;--bdr:#1a2e1a;--grn:#00ff41;--red:#ff2200;--txt:#c8c8c8;--tm:#666;--tc:#888;--f:'Courier New',monospace;--fa:'Arial Narrow',sans-serif}
+*{box-sizing:border-box;user-select:none;cursor:crosshair;margin:0;padding:0}
+body{background:var(--bg);color:var(--txt);font-family:var(--f);overflow:hidden;width:100vw;height:100vh}
+body::before{content:"";position:fixed;inset:0;background:url('data:image/svg+xml;utf8,<svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg"><filter id="f"><feTurbulence type="fractalNoise" baseFrequency="0.8" numOctaves="3" stitchTiles="stitch"/></filter><rect width="100%" height="100%" filter="url(%23f)" opacity="0.03"/></svg>');pointer-events:none;z-index:9998}
+body::after{content:"";position:fixed;inset:0;background:linear-gradient(rgba(18,16,16,0) 50%,rgba(0,0,0,0.2) 50%);background-size:100% 2px;pointer-events:none;z-index:9999}
+.crt{animation:glitch .15s linear infinite}
+@keyframes glitch{0%,100%{transform:translate(0)}20%{transform:translate(-3px,1px)}40%{transform:translate(2px,-2px)}60%{transform:translate(-2px,2px)}80%{transform:translate(3px,-1px)}}
+h1,h2,h3{font-family:var(--fa);letter-spacing:.15em;font-weight:normal}
+
+/* Utilities */
+.desktop-only{display:inline}
+.mobile-only{display:none}
+@media(max-width:768px){ .desktop-only{display:none} .mobile-only{display:inline} }
+
+#i{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:#000;z-index:9000;color:var(--tm);cursor:pointer;animation:pls 2s infinite}
+@keyframes pls{0%,100%{opacity:.3}50%{opacity:1}}
+#a-btn{position:absolute;bottom:5px;right:10px;color:var(--tm);z-index:9001;font-size:12px;cursor:pointer}
+#bo,#lo,#de{position:absolute;inset:0;display:none;flex-direction:column}
+#bo, #lo { padding:30px; }
+
+/* Boot / Login */
+#bo{background:var(--bg)}
+#bl{margin-bottom:20px;white-space:pre-wrap;line-height:1.5}
+#bp-c{display:none;width:500px;height:20px;border:1px solid var(--tc);max-width:100%}
+#bp{height:100%;background:var(--tc);width:0}
+#bm{margin-top:10px;font-size:.8em;color:var(--tc)}
+/* Login screen styles */
+#lo { position: absolute; inset: 0; background: #030303; display: none; align-items: center; justify-content: center; overflow: hidden; font-family: 'Courier New', monospace; font-size: 12px; color: #aaa; text-transform: uppercase; user-select: none; }
+.lo-bg-map { position: absolute; inset: 0; opacity: 0.05; background: url('data:image/svg+xml;utf8,<svg viewBox="0 0 1000 500" xmlns="http://www.w3.org/2000/svg"><path fill="none" stroke="white" stroke-width="0.5" d="M100 100 Q 200 50 300 150 T 500 150 M700 200 Q 800 150 900 250" /><path fill="none" stroke="white" stroke-width="0.2" d="M200 100 L 200 400 M 500 50 L 500 450" /></svg>') center/cover; pointer-events: none; }
+.lo-bg-grid { position: absolute; inset: 0; opacity: 0.15; background: linear-gradient(to right, rgba(255,255,255,0.05) 1px, transparent 1px), linear-gradient(to bottom, rgba(255,255,255,0.05) 1px, transparent 1px); background-size: 30px 30px; pointer-events: none; }
+.lo-bg-scanlines { position: absolute; inset: 0; background: linear-gradient(rgba(0,0,0,0) 50%, rgba(0,0,0,0.15) 50%); background-size: 100% 4px; pointer-events: none; opacity: 0.5; }
+.lo-bg-vignette { position: absolute; inset: 0; background: radial-gradient(circle at center, transparent 30%, #000 90%); pointer-events: none; }
+
+.lo-hud-tl { position: absolute; top: 20px; left: 20px; font-size: 10px; letter-spacing: 2px; }
+.lo-hud-tr { position: absolute; top: 20px; right: 20px; font-size: 10px; letter-spacing: 2px; text-align: right; }
+.lo-hud-bl { position: absolute; bottom: 20px; left: 20px; font-size: 8px; letter-spacing: 2px; color: #666; }
+.lo-hud-br { position: absolute; bottom: 20px; right: 20px; font-size: 8px; letter-spacing: 2px; color: #666; text-align: right; }
+.lo-dot-r { width: 6px; height: 6px; background: #ff2200; display: inline-block; animation: lb-blink 1s infinite; }
+.lo-dot-g { width: 6px; height: 6px; background: #00ff41; display: inline-block; animation: lb-blink 2s infinite; }
+@keyframes lb-blink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
+
+#lo-box { position: relative; z-index: 10; width: 340px; display: flex; flex-direction: column; align-items: center; }
+.lo-logos { text-align: center; margin-bottom: 20px; }
+.lo-sigma-icon { width: 24px; height: 24px; border: 1px solid #666; margin: 0 auto 10px; display: flex; align-items: center; justify-content: center; font-size: 12px; color: #888; }
+.lo-logos h2 { font-size: 12px; letter-spacing: 4px; color: #ddd; margin-bottom: 4px; font-family: 'Courier New', monospace; font-weight: bold; }
+.lo-logos h3 { font-size: 8px; letter-spacing: 2px; color: #666; font-family: 'Courier New', monospace; }
+
+.lo-panel { position: relative; width: 100%; border: 1px solid #222; background: #050505; padding: 25px; box-sizing: border-box; }
+.lo-corner { position: absolute; width: 15px; height: 15px; border: 1px solid #555; }
+.lo-corner.tl { top: -1px; left: -1px; border-right: none; border-bottom: none; }
+.lo-corner.tr { top: -1px; right: -1px; border-left: none; border-bottom: none; }
+.lo-corner.bl { bottom: -1px; left: -1px; border-right: none; border-top: none; }
+.lo-corner.br { bottom: -1px; right: -1px; border-left: none; border-top: none; }
+
+.lo-header { border-bottom: 1px solid #222; text-align: center; font-size: 8px; letter-spacing: 3px; color: #555; padding-bottom: 10px; margin-bottom: 20px; }
+.lo-emblem { display: flex; flex-direction: column; align-items: center; margin-bottom: 30px; }
+.lo-shield { width: 40px; height: 40px; color: #666; margin-bottom: 15px; }
+.lo-emblem h1 { font-size: 18px; letter-spacing: 5px; color: #ddd; font-family: 'Courier New', monospace; margin-bottom: 15px; font-weight: normal; text-align: center; }
+.lo-restricted { background: #110000; border: 1px solid rgba(255,34,0,0.3); padding: 5px 15px; text-align: center; font-size: 9px; letter-spacing: 2px; }
+
+.lo-inputs { display: flex; flex-direction: column; gap: 8px; margin-bottom: 25px; }
+.lo-inputs label { font-size: 8px; letter-spacing: 2px; color: #666; }
+.lo-inp { background: #020202; border: 1px solid #222; color: #ddd; padding: 10px; font-family: 'Courier New', monospace; font-size: 11px; letter-spacing: 2px; outline: none; box-sizing: border-box; }
+.lo-inp:focus { border-color: #555; }
+
+#lb { width: 100%; background: #1a0505; border: 1px solid #440a0a; color: #ff2200; padding: 12px; font-family: 'Courier New', monospace; font-size: 11px; letter-spacing: 4px; font-weight: bold; cursor: pointer; transition: 0.2s; margin-bottom: 10px; }
+#lb:hover { background: #330a0a; border-color: #881111; }
+
+#lc { font-size: 10px; text-align: center; color: #ff2200; min-height: 14px; margin-bottom: 10px; letter-spacing: 1px; }
+
+.lo-status { text-align: center; font-size: 7px; letter-spacing: 2px; color: #555; display: flex; flex-direction: column; gap: 4px; border-top: 1px solid #222; padding-top: 15px; margin-top: 10px; }
+
+.flex-align { display: flex; align-items: center; gap: 8px; }
+.err { border-color: #ff2200 !important; background: rgba(255,34,0,0.1) !important; color: #ff2200 !important; }
+
+/* Top Bar */
+.tbar{display:flex;justify-content:space-between;align-items:center;background:var(--bg-p);height:48px;padding:0 15px;border-bottom:1px solid var(--bdr);font-size:.85em;z-index:40;position:fixed;top:0;width:100%;box-sizing:border-box}
+@media(max-width:768px){.tbar{height:44px;padding:0 10px}}
+.t-left, .t-right { display:flex; align-items:center; white-space:nowrap; gap:10px; }
+.ham{color:var(--grn);font-size:24px;cursor:pointer;padding-right:10px}
+.threat-pill{background:var(--red);color:#fff;padding:2px 6px;font-weight:bold;font-size:12px;display:flex;align-items:center;justify-content:center;min-width:24px}
+
+/* Classification Bar */
+.cbar{height:24px;background:#8b0000;color:#fff;display:flex;align-items:center;justify-content:center;position:fixed;top:48px;width:100%;font-size:11px;z-index:35;font-family:var(--fa);font-weight:bold}
+@media(max-width:768px){.cbar{top:44px;font-size:9px}}
+
+/* Desktop Body */
+#de{background:var(--bg-d)}
+.d-wp{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;opacity:.05;z-index:0;pointer-events:none}
+.d-wp h1{font-size:25vw;color:var(--grn);text-align:center;line-height:.8;margin:0}
+.d-area{position:fixed;top:72px;bottom:32px;left:0;right:0;overflow-y:auto;padding:16px;z-index:10}
+@media(max-width:768px){.d-area{top:68px}}
+
+/* Sidebar */
+.s-panel{position:fixed;left:-280px;top:0;bottom:0;width:280px;background:#050505;border-right:1px solid var(--grn);transition:.3s;z-index:50;display:flex;flex-direction:column;overflow-y:auto}
+@media(max-width:768px){.s-panel{left:-100vw;width:100vw}}
+.s-panel.opn{left:0}
+.s-hdr{padding:20px 15px;border-bottom:1px solid #222}
+.s-hdr h2{color:var(--grn);font-size:1.1em;margin-bottom:5px;display:flex;justify-content:space-between;align-items:center}
+.s-cl{cursor:pointer;font-size:1.5em;color:var(--tc)}
+.s-cl:hover{color:var(--red)}
+.s-sep{border-bottom:1px solid #222;margin:5px 0}
+.n-it{height:48px;padding:0 15px;display:flex;align-items:center;justify-content:space-between;font-size:.85em;border-left:3px solid transparent;cursor:pointer;background:transparent}
+.n-it:hover{background:rgba(0,255,65,.05);border-left-color:var(--grn)}
+.n-it.act{border-left-color:var(--grn);background:rgba(0,255,65,.1);color:var(--grn)}
+.n-it .flex-align { display:flex; align-items:center; gap:8px;}
+.tag{font-family:var(--fa);font-size:.7em;padding:2px 5px;color:#fff;white-space:nowrap}
+.tag.ts{background:var(--red)}
+.tag.rs{background:orange}
+.tag.um{background:#8b0000}
+.tag.eo{background:#333}
+.tag.l9{background:#ff0033}
+.tag.ok{background:var(--tc)}
+
+/* Bottom Bar */
+.bbar{height:32px;position:fixed;bottom:0;width:100%;background:var(--bg-p);border-top:1px solid var(--bdr);display:flex;align-items:center;padding:0 15px;font-size:12px;z-index:40;box-sizing:border-box}
+@media(max-width:768px){.bbar{font-size:10px;padding:0 10px}}
+.tick{flex:1;overflow:hidden;margin:0 10px;color:var(--red);white-space:nowrap}
+.tick span{display:inline-block;animation:scr 30s linear infinite}
+.aud-btn{cursor:pointer;text-align:right}
+
+/* Desktop Icons Grid */
+#m1{display:none;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:24px;justify-content:start;align-content:start;max-width:960px;margin:0 auto}
+#m1.active {display:grid; }
+@media(max-width:768px){#m1{grid-template-columns:repeat(2,1fr)}}
+.d-icn{width:110px;text-align:center;cursor:pointer;margin:0 auto;display:flex;flex-direction:column;align-items:center}
+.d-icn .fol{font-size:2.5em;margin-bottom:8px;color:var(--tc);transition:.2s}
+.d-icn:hover .fol, .d-icn:hover .d-icn-tit{color:var(--grn)}
+.d-icn-tit{font-family:monospace;font-variant:small-caps;font-size:.85em;line-height:1.2;margin-bottom:5px;word-break:break-word}
+.d-icn-cls{font-size:.65em;font-family:var(--fa);color:var(--tc)}
+.d-icn-cls.ts{color:var(--red)}
+.d-icn-cls.rs{color:orange}
+.d-icn-cls.um{color:#8b0000}
+.d-icn-cls.eo{color:#333}
+
+/* Windows */
+.win{position:relative;background:var(--bg-p);border:1px solid var(--tc);display:none;flex-direction:column;z-index:15;box-shadow:0 0 30px rgba(0,0,0,.8);max-width:960px;margin:0 auto 20px;height:calc(100vh - 150px);max-height:800px}
+#m-img, #m-aud-player { position:fixed; top:50%; left:50%; transform:translate(-50%,-50%); width:90%; height:80%; z-index:100; margin:0; }
+@media(max-width:768px){
+  .win{max-width:100%;border:none;height:auto;min-height:calc(100vh - 100px);margin:0;box-shadow:none}
+  #m-img, #m-aud-player { width:100%; height:100%; top:0; left:0; transform:none; }
+}
+.w-hdr{background:var(--bg-c);padding:10px 15px;border-bottom:1px solid var(--tc);display:flex;justify-content:space-between;align-items:center;font-family:var(--fa)}
+.w-cls{color:var(--tm);cursor:pointer;font-size:1.2em;font-weight:bold}
+.w-cls:hover{color:var(--red)}
+.w-bdy{padding:16px;overflow-y:auto;flex:1;font-size:13px;word-break:break-word}
+@media(max-width:768px){.w-bdy{padding:12px;font-size:11px}}
+
+/* Module specific: Forensics Table -> Cards */
+.f-grid{display:grid;grid-template-columns:1fr 300px;gap:15px;height:100%}
+@media(max-width:768px){.f-grid{grid-template-columns:1fr;height:auto}}
+.f-lst{overflow-y:auto;overflow-x:hidden}
+.f-tbl{width:100%;border-collapse:collapse;text-align:left}
+.f-tbl th,.f-tbl td{border:1px solid #333;padding:8px}
+.f-tbl th{color:var(--tc);font-family:var(--fa)}
+.f-tr:hover{background:#111;color:var(--grn)}
+@media(max-width:768px){
+ .f-tbl thead{display:none}
+ .f-tr{display:flex;flex-direction:column;border:1px solid #333;margin-bottom:10px;padding:8px;background:rgba(255,255,255,.02)}
+ .f-tbl td{border:none;padding:4px 0}
+ .f-tbl td::before{content:attr(data-l) ": ";color:var(--tc);font-family:var(--fa);display:inline-block;width:120px}
+}
+.f-ana{border:1px solid var(--bdr);background:#050505;padding:15px;display:flex;flex-direction:column;align-items:center}
+.f-scan{width:100px;height:140px;border:1px solid var(--grn);position:relative;overflow:hidden;background:repeating-radial-gradient(ellipse at center, transparent, transparent 4px, rgba(0,255,65,0.2) 5px);border-radius:30px}
+.f-line{position:absolute;width:100%;height:2px;background:var(--grn);box-shadow:0 0 10px var(--grn);animation:scn 2s linear infinite alternate}
+@keyframes scn{0%{top:0}100%{top:100%}}
+.dna{margin-top:20px;height:150px;width:60px;position:relative}
+.d-st{position:absolute;width:10px;height:10px;border-radius:50%;background:var(--grn);animation:rt 4s linear infinite}
+@keyframes rt{0%{transform:rotateY(0deg) translateX(25px)}100%{transform:rotateY(360deg) translateX(25px)}}
+.log-bx{margin-top:15px;border:1px solid #333;padding:10px;font-size:.85em;height:120px;overflow-y:auto;display:flex;flex-direction:column-reverse;color:var(--tc)}
+
+/* Module specific: Map */
+#m-bd{position:relative;width:100%;min-height:500px;background:#111;overflow:hidden;padding:20px}
+@media(max-width:768px){
+ #m-bd{display:flex;flex-direction:column;gap:15px;overflow-y:auto;padding:15px;padding-left:30px;min-height:auto}
+ .m-svg{display:none}
+ #m-bd::before{content:"";position:absolute;left:20px;top:0;bottom:0;width:2px;background:repeating-linear-gradient(to bottom, var(--tc) 0, var(--tc) 5px, transparent 5px, transparent 10px);z-index:1}
+}
+.m-svg{position:absolute;inset:0;pointer-events:none}
+.nd{position:absolute;background:#050505;border:1px solid;padding:10px;box-shadow:2px 2px 10px rgba(0,0,0,.5);width:180px;z-index:2;transition:.2s}
+@media(max-width:768px){ .nd{position:relative;width:100%;top:auto!important;left:auto!important;z-index:3} }
+.nd.v{border-color:var(--red)}
+.nd.s{border-color:orange}
+.nd.l{border-color:#0077ff}
+.nd.u{border-color:var(--grn)}
+.nd.i{border-color:#fff;animation:p-w 2s infinite}
+@keyframes p-w{0%,100%{box-shadow:0 0 5px #fff}50%{box-shadow:0 0 15px #fff}}
+.nd:hover{transform:scale(1.05);z-index:3}
+@media(max-width:768px){ .nd:hover{transform:none} }
+.nd h3{border-bottom:1px solid;margin-bottom:5px;font-size:1.1em}
+
+/* SVG Lines */
+.m-ln{stroke-width:2;transition:.2s}
+.m-ln.v{stroke:var(--red)}
+.m-ln.s{stroke:orange}
+.m-ln.u{stroke:var(--tc)}
+.m-ln.i{stroke:#fff;opacity:.2;animation:p-o 2s infinite}
+@keyframes p-o{0%,100%{opacity:.1}50%{opacity:.4}}
+
+/* Interrogation */
+.i-grid{display:grid;grid-template-columns:300px 1fr;gap:15px;height:100%}
+@media(max-width:768px){.i-grid{grid-template-columns:1fr;height:auto}}
+.i-lst{border-right:1px solid #333;padding-right:10px;display:flex;flex-direction:column;gap:10px}
+@media(max-width:768px){.i-lst{border-right:none;border-bottom:1px solid #333;padding-right:0;padding-bottom:10px}}
+.i-sel{border:1px solid #333;padding:12px;background:#050505;cursor:pointer}
+.i-sel:hover{border-color:var(--grn)}
+.i-vw{padding:15px;line-height:1.6;overflow-y:auto;background:#000;border:1px solid #222;min-height:300px;color:var(--txt)}
+.i-vw pre{font-family:var(--f);white-space:pre-wrap}
+.i-aud{margin-top:15px;border:1px solid var(--bdr);padding:10px;display:flex;align-items:center;gap:10px;background:#050505}
+.i-play{background:var(--red);color:#fff;border:none;padding:5px 15px;font-weight:bold;cursor:pointer;font-family:var(--fa)}
+
+/* Modals/Overlays */
+.um-mod{position:fixed;inset:0;background:rgba(0,0,0,.9);z-index:9999;display:none;align-items:center;justify-content:center;padding:20px}
+.um-bx{border:2px solid var(--red);background:#000;padding:30px;width:100%;max-width:400px;text-align:center}
+.um-inp{background:transparent;border:none;border-bottom:2px solid var(--tc);color:var(--grn);font-family:var(--f);font-size:20px;text-align:center;width:100%;margin:20px 0;outline:none}
+.um-inp:focus{border-color:var(--grn)}
+.ctx{position:fixed;background:#000;border:1px solid var(--red);color:var(--red);padding:8px 12px;z-index:9999;font-weight:bold;display:none;box-shadow:0 0 10px rgba(255,0,0,.3)}
+
+/* Transmission Overlay Styles */
+#to {
+  position:fixed;inset:0;background:#000;z-index:9500;display:none;align-items:center;justify-content:center;color:var(--grn);font-family:var(--f);padding:20px;
+}
+.to-panel {
+  width:100%;max-width:620px;background:transparent;border:none;box-shadow:none;padding:0;display:flex;flex-direction:column;gap:40px;position:relative;align-items:center;justify-content:center;
+}
+</style>
+</head>
+<body>
+
+<div id="i">[ CLICK TO ESTABLISH SECURE CONNECTION ]</div>
+<div id="a-btn">[🔊 AUDIO: OFF]</div>
+
+<div id="bo">
+  <div id="bl"></div>
+  <div id="bp-c"><div id="bp"></div></div>
+  <div id="bm"></div>
+</div>
+
+<div id="lo">
+  <div class="lo-bg-map"></div>
+  <div class="lo-bg-grid"></div>
+  <div class="lo-bg-scanlines"></div>
+  <div class="lo-bg-vignette"></div>
+
+  <div class="lo-hud-tl">
+    <div class="flex-align"><span>TERMINAL SECURE</span> <div class="lo-dot-r"></div></div>
+    <div id="lo-time">02.45.12</div>
+  </div>
+  <div class="lo-hud-tr">
+    <div class="flex-align"><div class="lo-dot-g"></div> <span>NODO: CR-SEMA-04</span></div>
+    <div>ESTADO: EN LÍNEA</div>
+  </div>
+  <div class="lo-hud-bl">
+    <div>SYS.ID: 994-A-X</div>
+    <div>LAT: 47.9023 N // LON: 12.0934 E</div>
+    <div>UPLINK: ACTIVE // FREQ: 144.2 MHz</div>
+  </div>
+  <div class="lo-hud-br">
+    <div>MODULE: AUTORIZACIÓN</div>
+    <div>VER: 9.4.1.002</div>
+  </div>
+
+  <div id="lo-box">
+    <div class="lo-logos">
+      <div class="lo-sigma-icon">Σ</div>
+      <h2>AGENCIA SIGMA</h2>
+      <h3>CENTRO DE INVESTIGACIÓN<br>Y ANÁLISIS ESTRATÉGICO</h3>
+    </div>
+    <div class="lo-panel">
+      <div class="lo-corner tl"></div><div class="lo-corner tr"></div>
+      <div class="lo-corner bl"></div><div class="lo-corner br"></div>
+      <div class="lo-header">/// TOP SECRET // UMBRA // NOFORN ///</div>
+      <div class="lo-emblem">
+        <div class="lo-shield">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+        </div>
+        <h1>AGENCIA SIGMA</h1>
+        <div class="lo-restricted">
+          <span style="color:#ff2200;font-weight:bold;margin-bottom:2px;display:inline-block">[ ACCESO RESTRINGIDO ]</span><br>
+          <span style="color:#aa2200;font-size:7px;">SOLO PERSONAL AUTORIZADO</span>
+        </div>
+      </div>
+      <div class="lo-inputs">
+        <label>IDENTIFICACIÓN</label>
+        <input type="text" id="l-id" autocomplete="off" spellcheck="false" class="lo-inp">
+        <label>CONTRASEÑA</label>
+        <input type="password" id="l-pwd" class="lo-inp">
+        <label>CÓDIGO DE SEGURIDAD</label>
+        <input type="password" id="l-code" class="lo-inp" maxlength="6">
+      </div>
+      <button id="lb">INICIAR SESIÓN</button>
+      <div id="lc"></div>
+      <div class="lo-status">
+        <div>CONEXIÓN SEGURA ESTABLECIDA</div>
+        <div>CIFRADO AES-256 // PROTOCOLO SIGMA SECURE</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="to" style="position:fixed; inset:0; background:#000000; z-index:9500; display:none; align-items:center; justify-content:center; padding:0; margin:0; box-sizing:border-box;">
+  <div style="width:100%; max-width:420px; height:100%; display:flex; flex-direction:column; justify-content:center; align-items:center; padding:30px 20px; box-sizing:border-box; background:#000000;">
+    <!-- Symmetrical audio visualizer frame -->
+    <div style="width:100%; height:280px; display:flex; align-items:center; justify-content:center; background:#000000; overflow:hidden;">
+      <canvas id="vc" width="360" height="240" style="width:100%; height:100%; display:block; background:#000000;"></canvas>
+    </div>
+    
+    <!-- Subtitles area (Hidden to show no texts during transmission) -->
+    <div style="display:none;">
+      <div id="to-txt"></div>
+    </div>
+    
+    <!-- Skip button -->
+    <button id="to-skip" style="margin-top: 30px; background: transparent; border: 1px solid #333; color: #666; padding: 8px 16px; font-family: 'Courier New', monospace; font-size: 10px; letter-spacing: 2px; cursor: pointer; text-transform: uppercase;">OMITIR TRANSMISIÓN</button>
+  </div>
+</div>
+
+<div id="de">
+  <!-- Top Bar Layout (Fix 2) -->
+  <div class="tbar">
+    <div class="t-left">
+      <div class="ham" id="h-btn">≡</div>
+      <div style="font-family:var(--fa);letter-spacing:1px;font-size:1.1em">DSO // <span class="desktop-only">SECTOR 7-ALPHA</span><span class="mobile-only">S7</span></div>
+    </div>
+    <div class="t-right" style="font-family:var(--fa);letter-spacing:1px">
+      <span id="clk">00:00:00 ZULU</span>
+      <span class="desktop-only">AGENT-01</span>
+      <span class="threat-pill">
+        <span class="desktop-only">🔴 RED</span>
+        <span class="mobile-only">🔴 AM</span>
+      </span>
+    </div>
+  </div>
+  <div class="cbar">TOP SECRET // UMBRA // NOFORN</div>
+
+  <!-- Background Watermark -->
+  <div class="d-wp"><h1>DSO</h1></div>
+
+  <!-- Sidebar (Fix 1) -->
+  <div class="s-panel" id="sp">
+    <div class="s-hdr">
+      <h2>DSO // MÓDULOS CLASIFICADOS <span class="s-cl" id="h-cls">×</span></h2>
+      <div style="color:var(--tc);font-size:.85em">AGENTE-01 // NIVEL: UMBRA</div>
+    </div>
+    
+    <div class="n-it act" onclick="openMod('m1')">
+      <span class="flex-align">≡ PANEL PRINCIPAL</span> <span class="tag ok">ACTIVO</span>
+    </div>
+    <div class="s-sep"></div>
+    <div class="n-it" data-tgt="m5" onclick="openMod('m5')">
+      <span class="flex-align">📁 EXPEDIENTE 001</span> <span class="tag eo">EYES ONLY</span>
+    </div>
+    <div class="n-it" onclick="openMod('m6')">
+      <span class="flex-align">📁 BÓVEDA DE EVIDENCIAS</span> <span class="tag ok">ABIERTO</span>
+    </div>
+    <div class="n-it" onclick="openMod('m7')">
+      <span class="flex-align">📁 PROTOCOLO UMBRA</span> <span class="tag eo">ABIERTO</span>
+    </div>
+  </div>
+
+  <!-- Main Scrollable Content Area (Fix 5) -->
+  <div class="d-area" id="da">
+    
+    <!-- Fix 3: Desktop Grid -->
+    <div id="m1" class="active">
+      <div class="d-icn" data-tgt="m5" title="Doble tap / Doble click">
+        <div class="fol">📁</div>
+        <div class="d-icn-tit">EXPEDIENTE 001</div>
+        <div class="d-icn-cls eo">EYES ONLY</div>
+      </div>
+    </div>
+
+    <!-- Windows (Panels) -->
+    <!-- Expediente 001 window -->
+    <div class="win" id="m5">
+      <div class="w-hdr"><div>📁 EXPEDIENTE 001</div><div class="w-cls">× CERRAR</div></div>
+      <div class="w-bdy" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:24px;align-content:start;">
+        <div class="d-icn" onclick="openMod('m6')">
+          <div class="fol">📄</div>
+          <div class="d-icn-tit">RESUMEN DE<br>LA MISIÓN</div>
+          <div class="d-icn-cls ts">ACCESIBLE</div>
+        </div>
+        <div class="d-icn" onclick="openMod('m6')">
+          <div class="fol">📁</div>
+          <div class="d-icn-tit">OPERACIÓN<br>CARGA NOCTURNA</div>
+          <div class="d-icn-cls rs">RESTRINGIDO</div>
+        </div>
+        <div class="d-icn" onclick="openMod('m7')">
+          <div class="fol">📁</div>
+          <div class="d-icn-tit" style="font-size:0.7em">ARCHIVO —<br>UBICACIÓN ACTUAL<br>DEL CARGAMENTO</div>
+          <div class="d-icn-cls um">DESBLOQUEADO</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Operacion Night Cargo window -->
+    <div class="win" id="m6" style="background:#111111; border:2px solid #555; box-shadow:0 15px 40px rgba(0,0,0,0.8);">
+      <div class="w-hdr" style="background:#151515; color:#eee; border-bottom:1px solid #444; font-family:'Courier New', monospace;">
+        <div>📁 ARCHIVO DE EVIDENCIA: OPERACIÓN CARGA NOCTURNA</div>
+        <div class="w-cls">× CERRAR</div>
+      </div>
+      <div class="w-bdy" style="padding:0; overflow-y:auto; font-family:'Courier New', monospace; color:#eee; background-color:#121211; background-image:radial-gradient(circle at 50% 40%, rgba(26,26,24,0.95) 0%, rgba(10,10,10,0.98) 100%), repeating-linear-gradient(rgba(0,0,0,0.1) 0px, rgba(0,0,0,0.1) 1px, transparent 1px, transparent 8px), repeating-linear-gradient(90deg, rgba(0,0,0,0.1) 0px, rgba(0,0,0,0.1) 1px, transparent 1px, transparent 8px); background-blend-mode:multiply; position:relative;">
+        
+        <!-- Background decorative vignette overlays to feel like a gritty intelligence room spotlight -->
+        <div style="position:absolute; inset:0; box-shadow:inset 0 0 100px rgba(0,0,0,0.95); pointer-events:none; z-index:1;"></div>
+
+        <!-- Top secret military dossier title header -->
+        <div style="position:relative; z-index:2; border-bottom:3px double #8a1a1a; padding:24px 20px; background:rgba(18,18,18,0.7); display:flex; flex-wrap:wrap; justify-content:space-between; align-items:center; gap:20px;">
+          <!-- Left Badge -->
+          <div style="min-width:180px;">
+            <div style="font-size:10px; color:#ef4444; letter-spacing:2px; font-weight:bold; text-transform:uppercase;">AGENCIA SIGMA</div>
+            <div style="font-size:11px; color:#888; font-weight:bold; letter-spacing:1px; margin-top:2px;">DIVISIÓN DE INTELIGENCIA</div>
+            <div style="font-size:9px; color:#555; margin-top:1px;">SECURE ANALYTICAL ROOM S-3</div>
+          </div>
+          
+          <!-- Center Stenciled Title -->
+          <div style="text-align:center; flex:1; min-width:260px;">
+            <h1 style="font-size:24px; font-weight:900; color:#fff; letter-spacing:5px; text-transform:uppercase; margin:0; text-shadow:0 2px 4px rgba(0,0,0,0.5);">OPERACIÓN CARGA NOCTURNA</h1>
+            <div style="display:inline-block; border:1px solid #ef4444; color:#ef4444; font-size:11px; font-weight:bold; padding:2px 12px; margin-top:6px; letter-spacing:3px; background:rgba(239,68,68,0.08); text-transform:uppercase;">ALTAMENTE SECRETO // SOLO PARA TUS OJOS</div>
+          </div>
+          
+          <!-- Right Tracker Stamps -->
+          <div style="font-family:'Courier New', monospace; font-size:12px; border-left:1px solid #333; padding-left:15px; min-width:160px; line-height:1.4;">
+            <div>ESTADO: <span style="color:#ef4444; font-weight:bold; background:rgba(239,68,68,0.15); padding:1px 4px; border-radius:2px;">ACTIVO</span></div>
+            <div style="margin-top:4px;">NIVEL DE AMENAZA: <span style="color:#ef4444; font-weight:bold;">ALTO</span></div>
+          </div>
+        </div>
+
+        <!-- Sergeant Tactical Note (Typewritten memo taped at slightly crooked angle) -->
+        <div style="position:relative; z-index:2; background:#f4f2e6; color:#1a1a1a; padding:18px 24px; border:1px solid #d4cca6; box-shadow:0 8px 16px rgba(0,0,0,0.4); margin:20px; font-size:12px; line-height:1.6; transform:rotate(-0.8deg); max-width:900px; margin-left:auto; margin-right:auto;">
+          <!-- Simulated Yellow tape pieces -->
+          <div style="position:absolute; top:-10px; left:20px; width:70px; height:18px; background:rgba(240,230,140,0.7); transform:skewX(-15deg) rotate(-2deg); box-shadow:0 1px 3px rgba(0,0,0,0.15)"></div>
+          <div style="position:absolute; top:-8px; right:30px; width:60px; height:18px; background:rgba(240,230,140,0.7); transform:skewX(15deg) rotate(3deg); box-shadow:0 1px 3px rgba(0,0,0,0.15)"></div>
+          
+          <div style="border-bottom:1px dashed #bbb; padding-bottom:6px; margin-bottom:8px; font-weight:bold; letter-spacing:1px; color:#555; display:flex; justify-content:space-between;">
+            <span>MEMORANDO // INFORME DEL COMANDANTE</span>
+            <span>REF-INTEL-09</span>
+          </div>
+          
+          "Atención, unidad de asalto encubierta. Hemos reconstruido la línea logística completa del armamento militar sustraído. La información está expuesta en este tablero cronológico de evidencia. El tráfico comenzó con una descarga sigilosa y nos ha llevado hasta los líderes de distribución del Cártel de Sinaloa. Estudien las capturas, escuchen el audio analizado y coordinen la interceptación de inmediato. Proceder con extrema precaución."
+        </div>
+
+        <!-- Interactive Evidence pin board container -->
+        <div id="night-cargo-board" style="position:relative; width:100%; min-height:800px; padding:20px 25px; box-sizing:border-box; z-index:2;">
+          
+          <!-- Connections dynamic strings SVG (Rendered under the cards on desktop) -->
+          <svg id="board-connections-svg" style="position:absolute; inset:0; width:100%; height:100%; pointer-events:none; z-index:1; min-height:800px; opacity:0.8;"></svg>
+          
+          <!-- Chronological Step Layout (stacked vertically for mobile-first comfort and beautiful grid scaling on wide viewports) -->
+          <div style="display:flex; flex-direction:column; gap:45px; position:relative; z-index:10; max-width:1050px; margin:0 auto;">
+            
+            <!-- STEP 1 — DESCUBRIMIENTO INICIAL -->
+            <div id="card-step1" style="background:#181818; border:1px solid #333; padding:20px; position:relative; box-shadow:0 15px 35px rgba(0,0,0,0.6); transform:rotate(0.5deg); display:grid; grid-template-columns:1fr; gap:20px;">
+              
+              <!-- Red plastic physical pin with drop shadow -->
+              <div style="position:absolute; top:-12px; left:50%; transform:translateX(-50%); width:14px; height:24px; pointer-events:none; z-index:50;">
+                <div style="width:14px; height:14px; background:#ef4444; border-radius:50%; box-shadow:0 3px 5px rgba(0,0,0,0.6), inset -2px -2px 4px rgba(0,0,0,0.6), inset 2px 2px 4px rgba(255,255,255,0.7); position:relative;">
+                  <div style="width:2px; height:10px; background:#aaa; position:absolute; bottom:-10px; left:6px; box-shadow:1px 1px 2px rgba(0,0,0,0.5)"></div>
+                </div>
+              </div>
+              
+              <!-- Top indicator tags card -->
+              <div style="display:flex; justify-content:space-between; align-items:center; font-size:11px; font-weight:bold; color:#ef4444; border-bottom:1px solid #282828; padding-bottom:8px;">
+                <span>IMAGEN 1 — REF_DESCUBRIMIENTO: EVIDENCIA_01</span>
+                <span style="color:#888;">REGISTRO DE ARCHIVO // 02:14 AM</span>
+              </div>
+              
+              <!-- Content -->
+              <div style="display:flex; flex-direction:column; gap:16px;">
+                <h3 style="margin:0; font-size:16px; color:#fff; font-weight:bold; letter-spacing:1px; text-transform:uppercase;">CARGAMENTO NO IDENTIFICADO DETECTADO</h3>
+                
+                <!-- Main BIG surveillance photo -->
+                <div onclick="openImg('https://i.imgur.com/SJUFdEg.jpeg', 'IMAGEN 1: CARGAMENTO EN DETECTOR DE TRÁFICO')" style="cursor:pointer; width:100%; max-height:450px; overflow:hidden; border:6px solid #1c1c1c; background:#050505; position:relative; box-shadow:0 8px 20px rgba(0,0,0,0.8);" class="evidence-img-container">
+                  <img src="https://i.imgur.com/SJUFdEg.jpeg" style="width:100%; height:100%; object-fit:cover; filter:grayscale(30%) contrast(110%);" />
+                  
+                  <!-- Absolute visual overlay: Oily red marker directly drawn on physical photo! -->
+                  <svg style="position:absolute; inset:0; width:100%; height:100%; pointer-events:none; z-index:10;">
+                    <!-- Highlight marker circle around vehicle payload -->
+                    <ellipse cx="61%" cy="58%" rx="100" ry="50" stroke="#ef4444" stroke-width="4" fill="none" stroke-dasharray="3,6" transform="rotate(-3, 200, 200)" style="filter: drop-shadow(0 0 3px rgba(239, 68, 68, 0.8))" />
+                    <!-- Point text overlay -->
+                    <text x="61%" y="42%" fill="#ef4444" font-size="12px" font-weight="900" font-family="'Courier New', monospace" text-anchor="middle" style="letter-spacing:1px; filter: drop-shadow(0 1px 3px rgba(0,0,0,0.9));">DESCARGA DETECTADA</text>
+                  </svg>
+                  
+                  <!-- Tag labels overlay representing taped physical polaroid indicators -->
+                  <div style="position:absolute; bottom:12px; left:12px; background:#000; border:1px solid #ef4444; color:#ef4444; font-size:9px; padding:3px 8px; font-weight:bold; letter-spacing:1px;">CÁMARA TRÁFICO - CORREDOR S-2</div>
+                  <div style="position:absolute; top:12px; right:12px; background:rgba(0,0,0,0.8); color:#aaa; font-size:9px; padding:4px 8px; border-radius:2px;">🔍 CLICK PARA EXAMINAR EN GRANDE</div>
+                </div>
+                
+                <!-- Transcription annotations text -->
+                <div style="background:#111; border-left:4px solid #ef4444; padding:12px 16px;">
+                  <span style="display:block; font-size:10px; color:#ef4444; font-weight:bold; margin-bottom:4px; letter-spacing:1px;">REPORTE DE DETECTOR DE INTELIGENCIA:</span>
+                  <p style="margin:0; font-size:12px; line-height:1.5; color:#ccc;">
+                    “Cámaras de tráfico captaron descarga sospechosa de carga pesada durante horas de la madrugada.”
+                  </p>
+                </div>
+                
+                <!-- Physical-looking scribbled sticky notes simulated below -->
+                <div style="display:flex; flex-wrap:wrap; gap:12px; margin-top:5px;">
+                  <div style="background:#221818; border:1px dashed #ef4444; padding:8px 12px; font-size:11px; flex:1; min-width:180px;">
+                    <span style="color:#ef4444; font-weight:bold;">[!] ESTADO DE MARCAS:</span><br>
+                    Marcas militares parcialmente eliminadas.
+                  </div>
+                  <div style="background:#221818; border:1px dashed #ef4444; padding:8px 12px; font-size:11px; flex:1; min-width:180px;">
+                    <span style="color:#ef4444; font-weight:bold;">[!] ORIGEN DEL CARGAMENTO:</span><br>
+                    Origen desconocido. Bajo rastreo y seguimiento.
+                  </div>
+                  <div style="background:#221818; border:1px dashed #ef4444; padding:8px 12px; font-size:11px; flex:1; min-width:180px;">
+                    <span style="color:#ef4444; font-weight:bold;">[!] HORA DEL SUCESO:</span><br>
+                    Actividad detectada exactamente a las 02:14 AM.
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            <!-- STEP 2 — BODEGA BAJO VIGILANCIA -->
+            <div id="card-step2" style="background:#181818; border:1px solid #333; padding:20px; position:relative; box-shadow:0 15px 35px rgba(0,0,0,0.6); transform:rotate(-0.5deg); display:grid; grid-template-columns:1fr; gap:20px;">
+              
+              <!-- Red plastic physical pin with drop shadow -->
+              <div style="position:absolute; top:-12px; left:50%; transform:translateX(-50%); width:14px; height:24px; pointer-events:none; z-index:50;">
+                <div style="width:14px; height:14px; background:#ef4444; border-radius:50%; box-shadow:0 3px 5px rgba(0,0,0,0.6), inset -2px -2px 4px rgba(0,0,0,0.6), inset 2px 2px 4px rgba(255,255,255,0.7); position:relative;">
+                  <div style="width:2px; height:10px; background:#aaa; position:absolute; bottom:-10px; left:6px; box-shadow:1px 1px 2px rgba(0,0,0,0.5)"></div>
+                </div>
+              </div>
+              
+              <div style="display:flex; justify-content:space-between; align-items:center; font-size:11px; font-weight:bold; color:#ef4444; border-bottom:1px solid #282828; padding-bottom:8px;">
+                <span>IMAGEN 2 — RECONOCIMIENTO SATELITAL Y SENSORES</span>
+                <span style="color:#888;">OBJETIVO // BODEGA PERÍMETRO COSTA</span>
+              </div>
+              
+              <div style="display:flex; flex-direction:column; gap:16px;">
+                <h3 style="margin:0; font-size:16px; color:#fff; font-weight:bold; letter-spacing:1px; text-transform:uppercase;">ACTIVIDAD DE SEGURIDAD INUSUAL</h3>
+                
+                <!-- Interactive split visual display -->
+                <div style="display:grid; grid-template-columns:1.2fr 1fr; gap:15px;" class="board-grid-wrapper">
+                  
+                  <!-- Main Satellite Image -->
+                  <div onclick="openImg('https://i.imgur.com/Xkmxhr2.png', 'VISTA DE SATÉLITE - HANGAR DE ACOPIO')" style="cursor:pointer; height:280px; overflow:hidden; border:4px solid #1c1c1c; position:relative; box-shadow:0 6px 15px rgba(0,0,0,0.7);" class="evidence-img-container">
+                    <img src="https://i.imgur.com/Xkmxhr2.png" style="width:100%; height:100%; object-fit:cover; filter:grayscale(45%) contrast(115%);" />
+                    
+                    <!-- ABSOLUTE OILY MARKER RED LINE PERIMETER OVER SAT FEED -->
+                    <svg style="position:absolute; inset:0; width:100%; height:100%; pointer-events:none; z-index:10;">
+                      <polygon points="40,90 220,50 250,210 130,240" stroke="#ef4444" stroke-width="3" fill="rgba(239,68,68,0.15)" style="filter: drop-shadow(0 0 2px rgba(239,68,68,0.6));" stroke-dasharray="2,4" />
+                      <text x="140" y="140" fill="#ef4444" font-size="10px" font-weight="bold" font-family="'Courier New', monospace" style="filter: drop-shadow(0 0 2px rgba(0,0,0,0.8));">BODEGA CRÍTICA</text>
+                    </svg>
+                    
+                    <div style="position:absolute; top:8px; left:8px; background:rgba(0,0,0,0.85); border:1px solid #ef4444; color:#ef4444; font-size:8px; padding:2px 5px; font-weight:bold;">ESTADO ORBITAL DEL SATÉLITE: ENCUBIERTO</div>
+                    <div style="position:absolute; bottom:8px; right:8px; background:rgba(0,0,0,0.8); color:#ef4444; font-size:9px; padding:2px 5px;">🔍 VER GENERAL</div>
+                  </div>
+                  
+                  <!-- Secondary Thermal Overlay -->
+                  <div onclick="openImg('https://i.imgur.com/q2yxw8E.png', 'REGISTRO DE SENSOR TERMOGRÁFICO')" style="cursor:pointer; height:280px; overflow:hidden; border:4px solid #1c1c1c; position:relative; box-shadow:0 6px 15px rgba(0,0,0,0.7);" class="evidence-img-container">
+                    <img src="https://i.imgur.com/q2yxw8E.png" style="width:100%; height:100%; object-fit:cover; filter:grayscale(10%) sepia(10%) contrast(130%);" />
+                    <div style="position:absolute; top:8px; left:8px; background:rgba(0,0,0,0.85); border:1px solid #ffaa00; color:#ffaa00; font-size:8px; padding:2px 5px; font-weight:bold;">SENSOR TÉRMICO FLIR</div>
+                    <div style="position:absolute; bottom:8px; right:8px; background:rgba(0,0,0,0.8); color:#ef4444; font-size:9px; padding:2px 5px;">🔍 VER FLIR</div>
+                  </div>
+                  
+                </div>
+
+                <div style="background:#111; border-left:4px solid #ef4444; padding:12px 16px;">
+                  <span style="display:block; font-size:10px; color:#ef4444; font-weight:bold; margin-bottom:4px; letter-spacing:1px;">INFORME DE OBSERVACIÓN SATELITAL:</span>
+                  <p style="margin:0; font-size:12px; line-height:1.5; color:#ccc;">
+                    “Satélite y termografía identificaron actividad armada inusual rodeando un hangar industrial cerca del corredor costero.”
+                  </p>
+                </div>
+                
+                <div style="display:flex; flex-direction:column; gap:6px; background:#0f0f0f; border:1px solid #282828; padding:12px 15px; font-size:11px; color:#999; font-weight:bold;">
+                  <div style="color:#ef4444;">📋 ANOTACIONES ENCUBIERTAS:</div>
+                  <div>- SEGURIDAD INUSUAL: Centinela armado confirmado en sector de muelles privados.</div>
+                  <div>- ACTIVIDAD ARMADA: Operadores moviendo cajas rectangulares pesadas.</div>
+                  <div>- OPERACIÓN NOCTURNA: Ingreso de tres convoyes durante horas restringidas.</div>
+                </div>
+              </div>
+            </div>
+            
+            <!-- STEP 3 — AUDIO INTERCEPTADO (tactile cassette setup) -->
+            <div id="card-step3" style="background:#181818; border:1px dashed #ef4444; padding:20px; position:relative; box-shadow:0 15px 35px rgba(239,68,68,0.05); transform:rotate(0.3deg); display:grid; grid-template-columns:1fr; gap:15px;">
+              
+              <!-- Red plastic physical pin with drop shadow -->
+              <div style="position:absolute; top:-12px; left:30px; width:14px; height:24px; pointer-events:none; z-index:50;">
+                <div style="width:14px; height:14px; background:#ef4444; border-radius:50%; box-shadow:0 3px 5px rgba(0,0,0,0.6), inset -2px -2px 4px rgba(0,0,0,0.6), inset 2px 2px 4px rgba(255,255,255,0.7); position:relative;">
+                  <div style="width:2px; height:10px; background:#aaa; position:absolute; bottom:-10px; left:6px; box-shadow:1px 1px 2px rgba(0,0,0,0.5)"></div>
+                </div>
+              </div>
+              
+              <div style="display:flex; justify-content:space-between; align-items:center; font-size:11px; font-weight:bold; color:#ef4444; border-bottom:1px solid #2e1a1a; padding-bottom:8px;">
+                <span>REGISTRO 3 — SEGURIDAD DE SEÑALES SIGINT</span>
+                <span style="animation: pulse-audio-light 1.2s infinite alternate; color:#ef4444;">● CAPTURA TRANSMISIÓN DIRECTA</span>
+              </div>
+              
+              <div style="display:flex; flex-direction:column; gap:16px;">
+                <h3 style="margin:0; font-size:16px; color:#fff; font-weight:bold; letter-spacing:1px; text-transform:uppercase;">COMUNICACIÓN INTERCEPTADA</h3>
+                
+                <!-- Realistic tactical tape-recorder play interface -->
+                <div style="background:#101010; border:1px solid #332222; border-radius:4px; padding:15px; display:flex; flex-direction:column; gap:12px; box-shadow:inset 0 0 15px rgba(0,0,0,0.85); position:relative; overflow:hidden;">
+                  
+                  <!-- Ambient background tape reel design layout -->
+                  <div style="display:flex; justify-content:space-between; align-items:center; background:#080808; border:1.5px solid #222; padding:12px; border-radius:2px;">
+                     
+                    <!-- Cassette mockup design left side -->
+                    <div style="display:flex; align-items:center; gap:15px;">
+                      <!-- Styled tactile Play metal Switch button -->
+                      <button onclick="openAud('https://screenapp.io/app/v/JMxasnAJst', 'INTERCEPTADO - OPERACION CARGA NOCTURNA')" style="background:#ef4444; color:#000; border:1px solid #a32a2a; border-radius:3px; padding:8px 16px; font-weight:900; font-size:11px; cursor:pointer; font-family:'Courier New', monospace; letter-spacing:1px; display:flex; align-items:center; gap:6px; transition: 0.2s; box-shadow:0 3px 6px rgba(0,0,0,0.4);" onmouseover="this.style.background='#fff'; this.style.borderColor='#fff';" onmouseout="this.style.background='#ef4444'; this.style.borderColor='#a32a2a';">
+                        <span>▶</span> EJECUTAR REPRODUCCIÓN
+                      </button>
+                      
+                      <!-- Spinner mini mechanical reel indicator -->
+                      <div style="display:flex; gap:5px;" class="hidden sm:flex">
+                        <div style="width:18px; height:18px; border:2px dashed #444; border-radius:50%; animation: spin 8s linear infinite;"></div>
+                        <div style="width:18px; height:18px; border:2px dashed #444; border-radius:50%; animation: spin 8s linear infinite reverse;"></div>
+                      </div>
+                    </div>
+                    
+                    <!-- Analog green audio status tracking bars -->
+                    <div style="flex:1; max-width:200px; display:flex; gap:3px; align-items:flex-end; justify-content:flex-end; height:32px;">
+                      <div style="width:3px; height:35%; background:#ef4444;"></div>
+                      <div style="width:3px; height:65%; background:#ef4444;"></div>
+                      <div style="width:3px; height:85%; background:#ef4444;"></div>
+                      <div style="width:3px; height:45%; background:#ef4444;"></div>
+                      <div style="width:3px; height:15%; background:#222;"></div>
+                      <div style="width:3px; height:95%; background:#ef4444;"></div>
+                      <div style="width:3px; height:75%; background:#ef4444;"></div>
+                      <div style="width:3px; height:55%; background:#ef4444;"></div>
+                      <div style="width:3px; height:20%; background:#222;"></div>
+                    </div>
+                    
+                  </div>
+                  
+                  <style>
+                    @keyframes spin { 100% { transform: rotate(360deg); } }
+                  </style>
+                  
+                </div>
+
+                <!-- Classified stamp typed sheet transcript preview (highly realistic yellow paper style) -->
+                <div style="background:#f4edd0; color:#222; border:1px solid #dacf97; padding:18px 24px; box-shadow:0 4px 10px rgba(0,0,0,0.3); transform:rotate(-0.5deg); position:relative;">
+                  
+                  <!-- Tape clip at top -->
+                  <div style="position:absolute; top:-10px; left:40px; width:50px; height:15px; background:rgba(235,225,170,0.8); transform:rotate(-2deg); border-left:1px dashed #777; border-right:1px dashed #777;"></div>
+                  
+                  <!-- RED CLASSIFIED STAMP -->
+                  <div style="position:absolute; top:12px; right:15px; border:3px solid #b22222; color:#b22222; font-size:10px; font-weight:900; padding:2px 6px; text-transform:uppercase; transform:rotate(12deg); opacity:0.8; letter-spacing:1px; pointer-events:none;">
+                    TRANSCRIPCIÓN // CLASIFICADO
+                  </div>
+                  
+                  <div style="font-size:10px; font-weight:bold; color:#777; margin-bottom:8px; letter-spacing:1px; border-bottom:1px solid #e1d4a0; padding-bottom:4px;">
+                    VISTA PREVIA DEL EXTRACTO DE TRANSCRIPCIÓN DIRECTA
+                  </div>
+                  
+                  <div style="display:flex; flex-direction:column; gap:12px; font-family:'Courier New', monospace; font-size:12.5px; line-height:1.5;">
+                    <p style="margin:0; font-weight:bold; color:#a03030;">
+                      “...no sabía que esas armas militares eran tan potentes...”
+                    </p>
+                    <p style="margin:0; font-weight:bold; color:#a03030; border-left:3px solid #b22222; padding-left:10px;">
+                      “...llevarán la carga al puerto...”
+                    </p>
+                  </div>
+                  
+                  <div style="margin-top:12px; font-size:10px; color:#666; font-style:italic; border-top:1px dashed #e1d4a0; padding-top:6px;">
+                    DECODIFICADOR DE ANÁLISIS DE AUDIO SIGMA ID: TRAN_ST-RAW_99X
+                  </div>
+                </div>
+
+                <p style="margin:0; color:#ccc; font-size:12px; line-height:1.5;">
+                  “La comunicación interceptada sugiere movimientos ilegales y la posible venta de armamento de grado militar.”
+                </p>
+              </div>
+            </div>
+            
+            <!-- STEP 4 — IDENTIFICACIÓN DEL CÁRTEL -->
+            <div id="card-step4" style="background:#181818; border:1px solid #333; padding:20px; position:relative; box-shadow:0 15px 35px rgba(0,0,0,0.6); transform:rotate(-0.5deg); display:grid; grid-template-columns:1fr; gap:20px;">
+              
+              <!-- Red plastic physical pin with drop shadow -->
+              <div style="position:absolute; top:-12px; left:50%; transform:translateX(-50%); width:14px; height:24px; pointer-events:none; z-index:50;">
+                <div style="width:14px; height:14px; background:#ef4444; border-radius:50%; box-shadow:0 3px 5px rgba(0,0,0,0.6), inset -2px -2px 4px rgba(0,0,0,0.6), inset 2px 2px 4px rgba(255,255,255,0.7); position:relative;">
+                  <div style="width:2px; height:10px; background:#aaa; position:absolute; bottom:-10px; left:6px; box-shadow:1px 1px 2px rgba(0,0,0,0.5)"></div>
+                </div>
+              </div>
+              
+              <div style="display:flex; justify-content:space-between; align-items:center; font-size:11px; font-weight:bold; color:#ef4444; border-bottom:1px solid #282828; padding-bottom:8px;">
+                <span>REGISTRO 4 — INTELIGENCIA HUMANA: LOGÍSTICA DE SINALOA</span>
+                <span style="color:#ef4444; font-weight:bold;">📌 PERFIL DE OBJETIVO IDENTIFICADO</span>
+              </div>
+              
+              <div style="display:flex; flex-direction:column; gap:16px;">
+                <h3 style="margin:0; font-size:16px; color:#fff; font-weight:bold; letter-spacing:1px; text-transform:uppercase;">IDENTIFICACIÓN DEL CÁRTEL</h3>
+                
+                <!-- Polaroid styled photos side-by-side -->
+                <div style="display:grid; grid-template-columns:1fr 1.1fr; gap:20px; align-items:start;" class="board-grid-wrapper">
+                  
+                  <!-- Mugshot Polaroid 1 -->
+                  <div onclick="openImg('https://i.imgur.com/DNsFPxW.png', 'VIGILANCIA FIJA: OBJETIVO JAVIER')" style="cursor:pointer; background:#eee; border:12px solid #eee; border-bottom:28px solid #eee; box-shadow:0 6px 15px rgba(0,0,0,0.6); position:relative; overflow:hidden;" class="evidence-img-container">
+                    <!-- Red diagonal handwritten text directly over photograph -->
+                    <div style="position:absolute; top:10px; left:-25px; background:rgba(239,68,68,0.9); color:#fff; font-size:7px; font-weight:bold; padding:2px 25px; transform:rotate(-35deg); text-transform:uppercase; letter-spacing:1.5px; z-index:20;">OBJETIVO JAVIER</div>
+                    
+                    <div style="height:190px; overflow:hidden; background:#000;">
+                      <img src="https://i.imgur.com/DNsFPxW.png" style="width:100%; height:100%; object-fit:cover; filter:grayscale(100%) contrast(120%);" />
+                    </div>
+                    
+                    <!-- Paper tape masking the mugshot -->
+                    <div style="position:absolute; bottom:-25px; left:50%; transform:translateX(-50%); width:80%; text-align:center; font-family:'Courier New', monospace; font-size:11px; color:#333; font-weight:bold;">
+                      "JAVIER"<br><span style="font-size:8px; color:#666;">PRIMO / EL COLIBRÍ</span>
+                    </div>
+                  </div>
+                  
+                  <!-- Armed Faction Photo 2 -->
+                  <div onclick="openImg('https://i.imgur.com/oN1zubR.jpeg', 'VIGILANCIA: GRUPO DE ASALTO ASOCIADO')" style="cursor:pointer; background:#fff; border:8px solid #fff; border-bottom:24px solid #fff; box-shadow:0 6px 15px rgba(0,0,0,0.6); position:relative;" class="evidence-img-container">
+                    
+                    <div style="position:absolute; top: -10px; left: 20px; width: 60px; height: 16px; background: rgba(220, 200, 140, 0.7); transform: rotate(-8deg); z-index:20;"></div>
+                    
+                    <div style="height:190px; overflow:hidden; background:#000;">
+                      <img src="https://i.imgur.com/oN1zubR.jpeg" style="width:100%; height:100%; object-fit:cover; filter:grayscale(90%) sepia(10%) contrast(120%);" />
+                    </div>
+                    
+                    <div style="position:absolute; bottom:-22px; left:-2px; font-size:9.5px; font-weight:bold; color:#ef4444; font-family:'Courier New', monospace; text-transform:uppercase;">
+                      📌 PRESENCIA ARMADA CONFIRMADA
+                    </div>
+                  </div>
+                  
+                </div>
+
+                <div style="background:#111; border-left:4px solid #ef4444; padding:12px 16px; margin-top:5px;">
+                  <span style="display:block; font-size:10px; color:#ef4444; font-weight:bold; margin-bottom:4px; letter-spacing:1px;">DATOS BIOMÉTRICOS DE IDENTIFICACIÓN // ARCHIVO:</span>
+                  <p style="margin:0; font-size:12px; line-height:1.55; color:#ccc;">
+                    “El análisis de voz identificó a uno de los sospechosos como Javier, primo de alias ‘El Colibrí’ y vinculado a operaciones logísticas del Cártel de Sinaloa.”
+                  </p>
+                </div>
+                
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; font-size:11px; color:#999;" class="board-grid-wrapper">
+                  <div style="background:#1c1111; border-left:2px solid #ef4444; padding:6px 10px;">
+                    ✓ Conexión familiar confirmada. Telemetría de audio idéntica.
+                  </div>
+                  <div style="background:#1c1111; border-left:2px solid #ef4444; padding:6px 10px;">
+                    ✓ Vinculado directamente con operaciones de lanchas rápidas de transporte costero.
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            <!-- FINAL CONSOLIDATION AREA -->
+            <div id="card-conclusion" style="background:#1a0e0e; border:2px solid #ef4444; padding:24px; position:relative; box-shadow:0 15px 40px rgba(239,68,68,0.15); transform:rotate(0.2deg); display:flex; flex-direction:column; gap:20px;">
+              
+              <!-- Red plastic physical pin with drop shadow -->
+              <div style="position:absolute; top:-12px; left:50%; transform:translateX(-50%); width:14px; height:24px; pointer-events:none; z-index:50;">
+                <div style="width:14px; height:14px; background:#ef4444; border-radius:50%; box-shadow:0 3px 5px rgba(0,0,0,0.6), inset -2px -2px 4px rgba(0,0,0,0.6), inset 2px 2px 4px rgba(255,255,255,0.7); position:relative;">
+                  <div style="width:2px; height:10px; background:#aaa; position:absolute; bottom:-10px; left:6px; box-shadow:1px 1px 2px rgba(0,0,0,0.5)"></div>
+                </div>
+              </div>
+              
+              <div style="font-size:11px; font-weight:bold; color:#ef4444; letter-spacing:2.5px; border-bottom:1px solid #3c1515; padding-bottom:8px; text-transform:uppercase;">
+                CONSOLIDACIÓN FINAL // INFORME CASO DE CARGA NOCTURNA
+              </div>
+              
+              <div style="display:grid; grid-template-columns:1.2fr 1fr; gap:25px;" class="board-bottom-wrap">
+                
+                <div>
+                  <h3 style="margin:0 0 12px 0; color:#fff; font-size:17px; font-weight:bold; letter-spacing:1px; text-transform:uppercase;">CONCLUSIÓN DE LA INVESTIGACIÓN</h3>
+                  
+                  <div style="display:flex; flex-direction:column; gap:12px; font-size:12.5px; line-height:1.6; color:#ddd;">
+                    <p style="margin:0;">
+                      <span style="color:#ef4444; font-weight:bold;">[✓] DECLARACIÓN:</span> “Las evidencias recopiladas confirman el robo y movilización de armamento militar por parte de una célula criminal vinculada a alias ‘El Colibrí’.”
+                    </p>
+                    <p style="margin:0;">
+                      <span style="color:#ef4444; font-weight:bold;">[!] REPORTE DE SITUACIÓN:</span> Destino del cargamento: <span style="background:rgba(239,68,68,0.2); color:#ef4444; padding:1px 5px; font-weight:bold;">DESCONOCIDO</span>. Se presume un posible traslado marítimo inminente.
+                    </p>
+                  </div>
+                </div>
+                
+                <!-- Highly accented target briefing box representing mission dispatch target -->
+                <div style="background:#220909; border:2px dashed #ef4444; padding:18px; display:flex; flex-direction:column; justify-content:center; align-items:center; text-align:center; position:relative; box-shadow:0 6px 15px rgba(0,0,0,0.5);">
+                  <!-- Simulated masking tape top center -->
+                  <div style="position:absolute; top:-10px; width:70px; height:18px; background:rgba(239,68,68,0.3); border:1px solid rgba(239,68,68,0.6); transform:skewX(-10deg);"></div>
+                  
+                  <span style="font-size:9px; color:#ef4444; font-weight:bold; letter-spacing:2px; text-transform:uppercase; margin-bottom:5px;">SIGUIENTE OPERACIÓN</span>
+                  <div style="font-size:17px; font-weight:900; color:#fff; letter-spacing:1px; text-transform:uppercase; margin-bottom:8px;">IDENTIFICAR PUERTO DE DESTINO</div>
+                  <div style="font-size:11px; color:#ffb3b3; font-weight:bold; letter-spacing:1px;">PREPARAR INFILTRACIÓN Y EMBOSCADA</div>
+                  
+                  <div style="margin-top:12px; font-size:9px; color:#666; font-family:monospace; border-top:1px dashed #442222; width:100%; padding-top:6px;">
+                    AGENCIA SIGMA // AGENTE DE CAMPO PRIORIDAD ALCÓN-3
+                  </div>
+                </div>
+                
+              </div>
+            </div>
+            
+          </div>
+          
+        </div>
+        
+        <style>
+          @keyframes pulse-audio-light {
+            from { opacity: 0.4; transform: scale(0.96); }
+            to { opacity: 1; transform: scale(1.04); }
+          }
+          @media (max-width: 820px) {
+            .board-grid-wrapper, .board-bottom-wrap {
+              grid-template-columns: 1fr !important;
+            }
+            #board-connections-svg {
+              display: none !important;
+            }
+          }
+          .evidence-img-container {
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+          }
+          .evidence-img-container:hover {
+            transform: scale(1.015) rotate(0.5deg) !important;
+            box-shadow: 0 12px 28px rgba(0,0,0,0.9) !important;
+          }
+          .evidence-img-container:hover img {
+            filter: grayscale(0%) contrast(110%) !important;
+          }
+        </style>
+        
+      </div>
+    </div>
+
+    <!-- Ubicacion Actual del Cargamento window -->
+    <div class="win" id="m7" style="background:#111111; border:2px solid #555; box-shadow:0 15px 40px rgba(0,0,0,0.8);">
+      <div class="w-hdr" style="background:#151515; color:#eee; border-bottom:1px solid #444; font-family:'Courier New', monospace;">
+        <div>📁 EXPEDIENTE CLASIFICADO: UBICACIÓN ACTUAL DEL CARGAMENTO</div>
+        <div class="w-cls">× CERRAR</div>
+      </div>
+      <div class="w-bdy" style="padding:0; overflow-y:auto; font-family:'Courier New', monospace; color:#eee; background-color:#121211; background-image:radial-gradient(circle at 50% 40%, rgba(26,26,24,0.95) 0%, rgba(10,10,10,0.98) 100%), repeating-linear-gradient(rgba(0,0,0,0.1) 0px, rgba(0,0,0,0.1) 1px, transparent 1px, transparent 8px), repeating-linear-gradient(90deg, rgba(0,0,0,0.1) 0px, rgba(0,0,0,0.1) 1px, transparent 1px, transparent 8px); background-blend-mode:multiply; position:relative;">
+        
+        <!-- Background decorative vignette overlays -->
+        <div style="position:absolute; inset:0; box-shadow:inset 0 0 100px rgba(0,0,0,0.95); pointer-events:none; z-index:1;"></div>
+
+        <!-- Title Header -->
+        <div style="position:relative; z-index:2; border-bottom:3px double #8a1a1a; padding:24px 20px; background:rgba(18,18,18,0.7); display:flex; flex-wrap:wrap; justify-content:space-between; align-items:center; gap:20px;">
+          <div style="min-width:180px;">
+            <div style="font-size:10px; color:#ef4444; letter-spacing:2px; font-weight:bold; text-transform:uppercase;">AGENCIA SIGMA</div>
+            <div style="font-size:11px; color:#888; font-weight:bold; letter-spacing:1px; margin-top:2px;">DIVISIÓN DE INTELIGENCIA TÁCTICA</div>
+            <div style="font-size:9px; color:#555; margin-top:1px;">SECURE ANALYTICAL ROOM S-3</div>
+          </div>
+          
+          <div style="text-align:center; flex:1; min-width:260px;">
+            <h1 style="font-size:22px; font-weight:900; color:#fff; letter-spacing:4px; text-transform:uppercase; margin:0; text-shadow:0 2px 4px rgba(0,0,0,0.5);">UBICACIÓN ACTUAL DEL CARGAMENTO</h1>
+            <div style="display:inline-block; border:1px solid #ef4444; color:#ef4444; font-size:10px; font-weight:bold; padding:2px 12px; margin-top:6px; letter-spacing:3px; background:rgba(239,68,68,0.08); text-transform:uppercase;">NIVEL DE ENCRIPTACIÓN: UMBRA // CASO CRÍTICO</div>
+          </div>
+          
+          <div style="font-family:'Courier New', monospace; font-size:12px; border-left:1px solid #333; padding-left:15px; min-width:160px; line-height:1.4;">
+            <div>ESTADO: <span style="color:#ef4444; font-weight:bold; background:rgba(239,68,68,0.15); padding:1px 4px; border-radius:2px;">RASTREO EN VIVO</span></div>
+            <div style="margin-top:4px;">ORDEN DE CAPTURA: <span style="color:#ef4444; font-weight:bold;">SINALOA W-V7</span></div>
+          </div>
+        </div>
+
+        <!-- Captain's Tactical Note (Typewritten memo) -->
+        <div style="position:relative; z-index:2; background:#ebdcb9; color:#1a1a1a; padding:18px 24px; border:1px solid #c7b275; box-shadow:0 8px 16px rgba(0,0,0,0.4); margin:20px; font-size:12px; line-height:1.6; transform:rotate(0.5deg); max-width:900px; margin-left:auto; margin-right:auto;">
+          <!-- Simulated Yellow tape pieces -->
+          <div style="position:absolute; top:-10px; left:40px; width:80px; height:20px; background:rgba(230,210,130,0.75); transform:skewX(-15deg) rotate(2deg); box-shadow:0 1px 3px rgba(0,0,0,0.15)"></div>
+          <div style="position:absolute; bottom:-10px; right:40px; width:70px; height:18px; background:rgba(230,210,130,0.75); transform:skewX(12deg) rotate(-3deg); box-shadow:0 1px 3px rgba(0,0,0,0.15)"></div>
+          
+          <div style="border-bottom:1px dashed #9e8d53; padding-bottom:6px; margin-bottom:8px; font-weight:bold; letter-spacing:1px; color:#5c4f24; display:flex; justify-content:space-between;">
+            <span>REPORTE INTELIGENCIA DE COORDENADAS</span>
+            <span>ID_BÓVEDA: CARGO-LOC-99</span>
+          </div>
+          
+          "Hemos asegurado coordenadas geográficas definitivas de la posición actual del armamento militar. Los archivos aquí expuestos revelan de manera contundente la localización satelital a nivel regional y metropolitano. Los contrabandistas han consolidado el envío clandestino en los muelles y bodegas costeras clave. Use estos mapas interactivos para preparar la fase final de intervención del Grupo de Asalto."
+        </div>
+
+        <!-- Content Area: The two files -->
+        <div style="position:relative; z-index:2; max-width:950px; margin:0 auto; padding:10px 20px 40px; display:grid; grid-template-columns:repeat(auto-fit, minmax(320px, 1fr)); gap:30px;" id="location-files-container">
+          
+          <!-- Card File 1 -->
+          <div style="background:#161616; border:1px solid #333; border-top:4px solid #ef4444; border-radius:3px; padding:20px; display:flex; flex-direction:column; gap:15px; box-shadow:0 10px 25px rgba(0,0,0,0.5);">
+            <div style="display:flex; justify-content:space-between; align-items:center; font-size:11px; font-weight:bold; color:#ef4444; border-bottom:1px solid #282828; padding-bottom:8px;">
+              <span>DOCUMENTO 1 — ANÁLISIS GLOBAL</span>
+              <span style="color:#888;">ID: SAT_MAP_01A</span>
+            </div>
+            
+            <div style="display:flex; flex-direction:column; gap:12px;">
+              <h3 style="margin:0; font-size:15px; color:#fff; font-weight:bold; letter-spacing:1px;">RASTREO DE RUTA COSTA</h3>
+              
+              <!-- Interactive Clickable Image Thumbnail -->
+              <div onclick="openImg('https://i.imgur.com/Hnwa9Py.jpeg', 'ARCHIVO: RASTREO DE RUTA COSTA (ANÁLISIS GLOBAL)')" style="cursor:pointer; width:100%; height:240px; overflow:hidden; border:4px solid #222; background:#050505; position:relative; box-shadow:0 4px 10px rgba(0,0,0,0.6);" class="evidence-img-container">
+                <img src="https://i.imgur.com/Hnwa9Py.jpeg" style="width:100%; height:100%; object-fit:cover; transition: 0.3s; filter:grayscale(20%) contrast(110%);" />
+                <div style="position:absolute; top:8px; left:8px; background:rgba(0,0,0,0.85); border:1px solid #ef4444; color:#ef4444; font-size:8px; padding:2px 5px; font-weight:bold;">VISTA REGIONAL</div>
+                <div style="position:absolute; bottom:8px; right:8px; background:rgba(0,0,0,0.8); color:#ef4444; font-size:9px; padding:2px 5px; font-weight:bold;">🔍 VER COMPLETO</div>
+              </div>
+              
+              <div style="background:rgba(239,68,68,0.05); border-left:3px solid #ef4444; padding:8px 12px; font-size:12px; color:#ccc; line-height:1.5;">
+                <strong>Detalles del Análisis:</strong><br>
+                Esta imagen cartográfica muestra las líneas logísticas de transporte costero interconectando la ruta federal con los muelles privados del cártel. El punto crítico del cargamento militar ha sido rastreado a lo largo de este corredor.
+              </div>
+
+              <!-- Action button to open large modal -->
+              <button onclick="openImg('https://i.imgur.com/Hnwa9Py.jpeg', 'ARCHIVO: RASTREO DE RUTA COSTA (ANÁLISIS GLOBAL)')" style="background:#ef4444; color:#000; border:1px solid #a32a2a; border-radius:2px; padding:10px; font-weight:bold; font-size:11px; cursor:pointer; font-family:'Courier New', monospace; text-transform:uppercase; word-spacing:1px; outline:none; transition: 0.2s;" onmouseover="this.style.background='#fff'; this.style.borderColor='#fff';" onmouseout="this.style.background='#ef4444'; this.style.borderColor='#a32a2a';">
+                🔍 AMPLIAR REGISTRO COSTA
+              </button>
+            </div>
+          </div>
+
+          <!-- Card File 2 -->
+          <div style="background:#161616; border:1px solid #333; border-top:4px solid #ef4444; border-radius:3px; padding:20px; display:flex; flex-direction:column; gap:15px; box-shadow:0 10px 25px rgba(0,0,0,0.5);">
+            <div style="display:flex; justify-content:space-between; align-items:center; font-size:11px; font-weight:bold; color:#ef4444; border-bottom:1px solid #282828; padding-bottom:8px;">
+              <span>DOCUMENTO 2 — MAPA TÁCTICO</span>
+              <span style="color:#888;">ID: LOC_COORD_02B</span>
+            </div>
+            
+            <div style="display:flex; flex-direction:column; gap:12px;">
+              <h3 style="margin:0; font-size:15px; color:#fff; font-weight:bold; letter-spacing:1px;">PLANO METROPOLITANO SECTOR</h3>
+              
+              <!-- Interactive Clickable Image Thumbnail -->
+              <div onclick="openImg('https://i.imgur.com/NyLgH7v.png', 'ARCHIVO: PLANO METROPOLITANO SECTOR (MAPA TÁCTICO)')" style="cursor:pointer; width:100%; height:240px; overflow:hidden; border:4px solid #222; background:#050505; position:relative; box-shadow:0 4px 10px rgba(0,0,0,0.6);" class="evidence-img-container">
+                <img src="https://i.imgur.com/NyLgH7v.png" style="width:100%; height:100%; object-fit:cover; transition: 0.3s; filter:grayscale(10%) contrast(110%);" />
+                <div style="position:absolute; top:8px; left:8px; background:rgba(0,0,0,0.85); border:1px solid #ffaa00; color:#ffaa00; font-size:8px; padding:2px 5px; font-weight:bold;">COORDENADAS ESTABLECIDAS</div>
+                <div style="position:absolute; bottom:8px; right:8px; background:rgba(0,0,0,0.8); color:#ef4444; font-size:9px; padding:2px 5px; font-weight:bold;">🔍 VER COMPLETO</div>
+              </div>
+              
+              <div style="background:rgba(255,170,0,0.05); border-left:3px solid #ffaa00; padding:8px 12px; font-size:12px; color:#ccc; line-height:1.5;">
+                <strong>Detalles del Análisis:</strong><br>
+                Plano local geo-referenciado con posicionamiento final. El marcador muestra la bodega resguardada en el puerto de contenedores donde el arsenal de artillería pesada espera cargue final marítimo.
+              </div>
+
+              <!-- Action button to open large modal -->
+              <button onclick="openImg('https://i.imgur.com/NyLgH7v.png', 'ARCHIVO: PLANO METROPOLITANO SECTOR (MAPA TÁCTICO)')" style="background:#ef4444; color:#000; border:1px solid #a32a2a; border-radius:2px; padding:10px; font-weight:bold; font-size:11px; cursor:pointer; font-family:'Courier New', monospace; text-transform:uppercase; word-spacing:1px; outline:none; transition: 0.2s;" onmouseover="this.style.background='#fff'; this.style.borderColor='#fff';" onmouseout="this.style.background='#ef4444'; this.style.borderColor='#a32a2a';">
+                🔍 AMPLIAR COORDENADAS METRO
+              </button>
+            </div>
+          </div>
+
+        </div>
+
+      </div>
+    </div>
+
+    <!-- Image Viewer -->
+    <div class="win" id="m-img" style="position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);width:90%;height:80%;max-width:1000px;z-index:10000;box-shadow:0 0 100px rgba(0,0,0,0.9);border:1px solid var(--grn);">
+      <div class="w-hdr" style="background:rgba(0,0,0,0.9);"><div id="m-img-tit" style="color:var(--grn)">🖼 VISOR DE IMÁGENES</div><div class="w-cls" data-viewer="true" style="padding:5px 15px;background:#222;border:1px solid #444;">× CERRAR</div></div>
+      <div class="w-bdy" style="display:flex;align-items:center;justify-content:center;background:#000;padding:0;overflow:hidden;">
+        <img id="m-img-src" src="" style="max-width:95%;max-height:95%;object-fit:contain;border:1px solid #222;">
+      </div>
+    </div>
+
+    <!-- Audio Player Viewer -->
+    <div class="win" id="m-aud-player" style="position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);width:90%;height:300px;max-width:500px;z-index:10000;box-shadow:0 0 100px rgba(0,0,0,0.9);border:1px solid var(--grn);">
+      <div class="w-hdr" style="background:rgba(0,0,0,0.9);"><div id="m-aud-tit" style="color:var(--grn)">🎵 REPRODUCTOR DE AUDIO</div><div class="w-cls" data-viewer="true" style="padding:5px 15px;background:#222;border:1px solid #444;">× CERRAR</div></div>
+      <div class="w-bdy" style="display:flex;flex-direction:column;align-items:center;justify-content:center;background:#050505;padding:20px;">
+        <div style="font-size:3em;margin-bottom:15px;opacity:0.5;">🎵</div>
+        <div id="m-aud-name" style="margin-bottom:20px;font-family:monospace;color:var(--grn);text-align:center;word-break:break-all;font-size:0.9em;">AUDIO_INTERCEPTO.MP3</div>
+        <div style="width:100%;height:60px;background:#000;border:1px solid #333;margin-bottom:20px;display:flex;align-items:center;justify-content:center;overflow:hidden;">
+            <!-- Simple visual decoration -->
+            <div style="display:flex;gap:3px;align-items:flex-end;height:30px;">
+                <div style="width:4px;height:40%;background:var(--grn);animation:v-b 0.5s infinite alternate"></div>
+                <div style="width:4px;height:80%;background:var(--grn);animation:v-b 0.7s infinite alternate"></div>
+                <div style="width:4px;height:60%;background:var(--grn);animation:v-b 0.4s infinite alternate"></div>
+                <div style="width:4px;height:100%;background:var(--grn);animation:v-b 0.8s infinite alternate"></div>
+                <div style="width:4px;height:70%;background:var(--grn);animation:v-b 0.6s infinite alternate"></div>
+            </div>
+            <style>@keyframes v-b{from{height:20%}to{height:100%}}</style>
+        </div>
+        <div style="width:100%;">
+           <!-- Note: Using the provided URL directly as a source if it leads to a media stream, 
+                otherwise screenapp.io requires an iframe. Since user wants 'no go to web', 
+                we ensure it stays inside this component. -->
+           <audio id="m-aud-src" controls style="width:100%;filter:invert(1) hue-rotate(180deg);"></audio>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bottom Bar (Fix 4) -->
+  <div class="bbar">
+    <div class="desktop-only" style="white-space:nowrap;font-weight:bold;font-family:var(--fa);letter-spacing:1px">DSO NET //</div>
+    <div class="tick"><span>⚠ TRANSMISSION INTERCEPTED — ORIGIN UNKNOWN // OPERATIVE KOVACS — STATUS: MISSING // OBJECT OF INTEREST RELOCATED — HANGAR 18 // DO NOT DISCUSS PROTOCOL UMBRA ON UNSECURED LINES</span></div>
+    <div class="aud-btn" id="m-aud" onclick="$('#a-btn').click()" title="Alternar Audio">
+      <span class="desktop-only">[🔊 AUDIO]</span><span class="mobile-only">🔊</span>
+    </div>
+  </div>
+</div>
+
+<div class="um-mod" id="um">
+  <div class="um-bx">
+    <h3 style="color:var(--red)">⛔ RESTRICTED ACCESS</h3><div style="margin-top:10px;color:var(--tc);font-size:.8em">CLEARANCE LEVEL: UMBRA REQUIRED</div>
+    <input type="password" class="um-inp" id="ump" maxlength="10">
+    <div class="l-btn" id="ubtn">AUTHENTICATE</div>
+    <div class="l-btn" id="cabtn" style="border-color:var(--tc);color:var(--tc);margin-top:10px">ABORT MISSION</div>
+  </div>
+</div>
+
+
+<div class="ctx" id="ctxm">⛔ LOGGED // REG <span id="csid"></span></div>
+
+<!-- SIDE VOICE NOTIFICATION STYLES & ELEMENT -->
+<style>
+/* Voice Notification Panel Styles */
+#vn-panel {
+  position: fixed;
+  z-index: 10500;
+  width: 280px;
+  max-height: 160px;
+  background: #080808;
+  border: 1px solid #1a2e1a;
+  border-left: 3px solid #00ff41;
+  box-shadow: -4px 0 20px rgba(0,255,65,0.08);
+  font-family: 'Courier New', monospace;
+  color: #eee;
+  padding: 10px;
+  box-sizing: border-box;
+  transition: transform 0.4s ease-out, opacity 0.4s ease-out;
+  display: none;
+  flex-direction: column;
+  gap: 8px;
+  pointer-events: auto;
+}
+
+@keyframes vn-blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
+}
+
+.vn-red-dot {
+  color: #cc0000;
+  animation: vn-blink 1s infinite;
+  margin-right: 6px;
+  display: inline-block;
+}
+
+/* Desktop Styles */
+@media (min-width: 769px) {
+  #vn-panel {
+    bottom: 20px;
+    right: 20px;
+    transform: translateX(320px);
+  }
+  #vn-panel.vn-shown {
+    transform: translateX(0);
+  }
+}
+
+/* Mobile Styles */
+@media (max-width: 768px) {
+  #vn-panel {
+    bottom: 20px;
+    left: 24px;
+    right: 24px;
+    width: calc(100% - 48px);
+    transform: translateY(200px);
+  }
+  #vn-panel.vn-shown {
+    transform: translateY(0);
+  }
+}
+</style>
+
+<div id="vn-panel">
+  <!-- Top Left Corner Bracket -->
+  <div style="position: absolute; top: 4px; left: 4px; font-family: monospace; font-size: 8px; color: #0d3a0d; line-height: 1; pointer-events: none;">╔═</div>
+  
+  <!-- Header row -->
+  <div style="display: flex; justify-content: space-between; align-items: center; width: 100%; border-bottom: 1px solid #0d1a0d; padding-bottom: 5px; margin-bottom: 3px;">
+    <div style="display: flex; align-items: center;">
+      <span class="vn-red-dot">●</span>
+      <span style="font-family: monospace; font-size: 8px; color: #cc0000; letter-spacing: 0.2em; font-weight: bold; line-height: 1;">TRANSMISIÓN ENTRANTE</span>
+    </div>
+  </div>
+  
+  <!-- Screen 1: Intercepting signal (Typewriter) -->
+  <div id="vn-screen-intercept" style="display: flex; flex-direction: column; justify-content: center; height: 76px; box-sizing: border-box;">
+    <div id="vn-typewriter" style="font-size: 8px; color: #00ff41; font-family: monospace; letter-spacing: 1px;"></div>
+  </div>
+  
+  <!-- Screen 2: Active player & waveform -->
+  <div id="vn-screen-player" style="display: none; flex-direction: column; gap: 6px; width: 100%;">
+    <!-- Waveform Visualizer Canvas -->
+    <canvas id="vn-canvas" width="260" height="40" style="width: 100%; height: 40px; display: block; background: transparent;"></canvas>
+    
+    <!-- Player row -->
+    <div style="display: flex; align-items: center; gap: 8px; width: 100%;">
+      <button id="vn-play-btn" style="width: 28px; height: 28px; background: transparent; border: 1px solid #1a3a1a; color: #00ff41; font-size: 10px; cursor: pointer; display: flex; align-items: center; justify-content: center; padding: 0; outline: none; border-radius: 2px;">▶</button>
+      <div style="flex: 1; height: 1px; background: #0d1a0d; position: relative;">
+        <div id="vn-progress-fill" style="position: absolute; left: 0; top: 0; height: 100%; width: 0%; background: #00ff41;"></div>
+      </div>
+      <div id="vn-time" style="font-family: monospace; font-size: 8px; color: #333; white-space: nowrap;">0:00 / 0:00</div>
+    </div>
+  </div>
+  
+  <!-- Footer Agent Label Info -->
+  <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid #0d1a0d; padding-top: 5px; margin-top: 2px; font-family: monospace;">
+    <span style="font-size: 7px; color: #1a4a1a;">ORIGEN: COMANDO CENTRAL</span>
+    <span style="font-size: 7px; color: #0d3a0d;">AGENTE-01 // CANAL SEGURO</span>
+  </div>
+</div>
+
+<script>
+const $ = s => document.querySelector(s);
+const $$ = s => document.querySelectorAll(s);
+
+// Audio Engine
+let ax, au=0;
+const inA=()=>{if(au)return;ax=new(window.AudioContext||window.webkitAudioContext)();au=1;$('#a-btn').innerText="[🔊 ON]";sfx.amb()};
+$('#a-btn').onclick=()=>{$('#i').style.display='none';if(!au)inA();else{au=0;ax.close();$('#a-btn').innerText="[🔊 OFF]"}};
+$('#i').onclick=()=>{$('#i').style.display='none';inA();$('#bo').style.display='flex';setTimeout(tyB,800)};
+
+const tn=(f,ty,d,v=.05)=>{if(!au)return;let o=ax.createOscillator(),g=ax.createGain();o.type=ty;o.frequency.value=f;g.gain.setValueAtTime(v,ax.currentTime);g.gain.exponentialRampToValueAtTime(.001,ax.currentTime+d);o.connect(g);g.connect(ax.destination);o.start();o.stop(ax.currentTime+d)};
+const ns=(d,v=.05,lp=800)=>{if(!au)return;let b=ax.createBuffer(1,ax.sampleRate*d,ax.sampleRate),dt=b.getChannelData(0);for(let i=0;i<b.length;i++)dt[i]=Math.random()*2-1;let n=ax.createBufferSource(),f=ax.createBiquadFilter(),g=ax.createGain();n.buffer=b;f.type='lowpass';f.frequency.value=lp;g.gain.setValueAtTime(v,ax.currentTime);g.gain.exponentialRampToValueAtTime(.001,ax.currentTime+d);n.connect(f);f.connect(g);g.connect(ax.destination);n.start()};
+
+const sfx={
+ c:()=>ns(.015,.03,1000), 
+ b:()=>{tn(880,'square',.05,.02);setTimeout(()=>tn(880,'square',.05,.02),80)}, 
+ w:()=>tn(150,'sawtooth',.6,.1),
+ al:()=>{for(let i=0;i<3;i++){setTimeout(()=>tn(880,'square',.2,.1),i*400);setTimeout(()=>tn(440,'square',.2,.1),i*400+200);}},
+ g:()=>{ns(.1,.1,3000);tn(110,'sawtooth',.1,.1)},
+ st:(i)=>tn(400+i*40,'sine',.08,.05), 
+ ch:()=>{tn(600,'sine',.3,.05);setTimeout(()=>tn(900,'sine',.3,.05),150)},
+ sc:()=>tn(200,'sine',1.5,.03),
+ p:()=>ns(.2,.08,1200),
+ amb:()=>{
+  let o=ax.createOscillator(),g=ax.createGain();o.type='sine';o.frequency.value=60;g.gain.value=.02;o.connect(g);g.connect(ax.destination);o.start();
+  setInterval(()=>{if(au&&Math.random()>.5)tn(40,'square',.8,.02)},8000);
+ },
+ vx:()=>{
+  let i=0,iv=setInterval(()=>{if(!au){clearInterval(iv);return;}ns(.1,.1,1200);if(Math.random()>.7)tn(120,'sawtooth',.1,.02);if(i++>40)clearInterval(iv)},150);
+ }
+};
+
+// Phase 1: Boot
+const blns=["SECURE ACCESS TERMINAL // PREPARING...", "VERIFYING SIGNATURE... 87%", "LOADING OS..."];
+let bi=0, ci=0, bE=$('#bl');
+const tyB=()=>{
+ if(bi>=blns.length){stS();return}
+ let l=blns[bi];
+ if(ci<l.length){if(ci===0)bE.innerHTML+="<div></div>";bE.lastChild.innerHTML+=l[ci];sfx.c();ci++;setTimeout(tyB,20)}
+ else{bi++;ci=0;setTimeout(tyB,150)}
+};
+const stS=()=>{
+ $('#bp-c').style.display='block'; sfx.sc();
+ let p=0;
+ let piv=setInterval(()=>{p+=4;$('#bp').style.width=p+'%';if(p>=100){clearInterval(piv);sfx.g();$('#bo').style.display='none';$('#lo').style.display='flex';setInterval(()=>{let d=new Date();let hh=String(d.getHours()).padStart(2,'0');let mm=String(d.getMinutes()).padStart(2,'0');let ss=String(d.getSeconds()).padStart(2,'0');let el=$('#lo-time');if(el)el.innerText=hh+'.'+mm+'.'+ss;},1000);}},40);
+};
+
+// Tactical Transmission Sequence Logic
+let transmissionGain = null;
+let voiceAnalyser = null;
+let vcAnimateId = null;
+
+let staticEndTime = 0;
+let transmissionPhase = 'silent';
+let phaseStartTime = 0;
+
+let transmissionAudio = null;
+let audioSourceNode = null;
+
+const initTransmissionAudio = () => {
+  try {
+    // Always instantiate HTML Audio element so it performs lifecycle and audio ends correctly
+    transmissionAudio = new Audio();
+    transmissionAudio.crossOrigin = "anonymous";
+    transmissionAudio.src = "/api/transmission-audio?id=kNV5bPTxa5";
+  } catch (e) {
+    console.warn("Audio element initialization failed:", e);
+  }
+
+  if (!au || !ax) return;
+  try {
+    voiceAnalyser = ax.createAnalyser();
+    voiceAnalyser.fftSize = 256;
+    transmissionGain = ax.createGain();
+    transmissionGain.gain.value = 1.0;
+    
+    if (transmissionAudio) {
+      audioSourceNode = ax.createMediaElementSource(transmissionAudio);
+      audioSourceNode.connect(transmissionGain);
+    }
+    
+    transmissionGain.connect(voiceAnalyser);
+    voiceAnalyser.connect(ax.destination);
+  } catch(e) {
+    console.warn("Audio Context initialization failed:", e);
+  }
+};
+
+const playTransmissionStatic = (duration, volume, lowpassFreq = 1600) => {
+  if (!au || !ax || !transmissionGain) return;
+  try {
+    const now = ax.currentTime;
+    const bufferSize = ax.sampleRate * duration;
+    const buffer = ax.createBuffer(1, bufferSize, ax.sampleRate);
+    const data = buffer.getChannelData(0);
+    
+    for (let i = 0; i < bufferSize; i++) {
+      data[i] = Math.random() * 2 - 1;
+    }
+    
+    const source = ax.createBufferSource();
+    source.buffer = buffer;
+    
+    const filter = ax.createBiquadFilter();
+    filter.type = 'lowpass';
+    filter.frequency.setValueAtTime(lowpassFreq, now);
+    filter.frequency.linearRampToValueAtTime(lowpassFreq * 0.6, now + duration);
+    
+    const gain = ax.createGain();
+    gain.gain.setValueAtTime(volume, now);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + duration);
+    
+    source.connect(filter);
+    filter.connect(gain);
+    gain.connect(transmissionGain);
+    
+    source.start(now);
+    source.stop(now + duration);
+    
+    staticEndTime = Date.now() + duration * 1000;
+  } catch(e) {
+    console.warn(e);
+  }
+};
+
+const playPowerOutageEffect = () => {
+  if (!au || !ax) return;
+  try {
+    const now = ax.currentTime;
+    
+    const osc = ax.createOscillator();
+    const osc2 = ax.createOscillator();
+    const noiseSource = ax.createBufferSource();
+    const noiseBuffer = ax.createBuffer(1, ax.sampleRate * 1.5, ax.sampleRate);
+    const data = noiseBuffer.getChannelData(0);
+    for (let i = 0; i < noiseBuffer.length; i++) {
+      data[i] = Math.random() * 2 - 1;
+    }
+    noiseSource.buffer = noiseBuffer;
+    
+    const gain = ax.createGain();
+    const filter = ax.createBiquadFilter();
+    
+    osc.type = 'sawtooth';
+    osc.frequency.setValueAtTime(140, now);
+    osc.frequency.exponentialRampToValueAtTime(15, now + 1.2);
+    
+    osc2.type = 'triangle';
+    osc2.frequency.setValueAtTime(70, now);
+    osc2.frequency.exponentialRampToValueAtTime(10, now + 1.2);
+    
+    filter.type = 'lowpass';
+    filter.frequency.setValueAtTime(300, now);
+    filter.frequency.linearRampToValueAtTime(20, now + 1.2);
+    
+    gain.gain.setValueAtTime(0.18, now);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + 1.2);
+    
+    osc.connect(filter);
+    osc2.connect(filter);
+    filter.connect(gain);
+    gain.connect(ax.destination);
+    
+    const noiseGain = ax.createGain();
+    const noiseFilter = ax.createBiquadFilter();
+    noiseFilter.type = 'bandpass';
+    noiseFilter.frequency.setValueAtTime(800, now);
+    noiseFilter.frequency.exponentialRampToValueAtTime(100, now + 1.0);
+    
+    noiseGain.gain.setValueAtTime(0.25, now);
+    noiseGain.gain.exponentialRampToValueAtTime(0.005, now + 0.82);
+    
+    noiseSource.connect(noiseFilter);
+    noiseFilter.connect(noiseGain);
+    noiseGain.connect(ax.destination);
+    
+    osc.start(now);
+    osc2.start(now);
+    noiseSource.start(now);
+    
+    osc.stop(now + 1.3);
+    osc2.stop(now + 1.3);
+    noiseSource.stop(now + 1.3);
+    
+    setTimeout(() => {
+      tn(60, 'sine', 0.2, 0.3);
+      tn(700, 'square', 0.02, 0.04);
+    }, 120);
+  } catch(e) {
+    console.warn(e);
+  }
+};
+
+const drawVisualizer = () => {
+  const canvas = $('#vc');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  const w = canvas.width;
+  const h = canvas.height;
+  
+  const N = 70; // Perfect pill-shaped bars count across width
+  const barWidth = 3.5;
+  const barSpacing = 4.0;
+  const centerY = h / 2;
+  const maxBarHeight = h * 0.60; // center maximum target height config
+  
+  const currentHeights = new Float32Array(N);
+  const targetHeights = new Float32Array(N);
+  
+  const render = () => {
+    vcAnimateId = requestAnimationFrame(render);
+    
+    // Pure completely black background, zero color bleed or grids
+    ctx.fillStyle = '#000000';
+    ctx.fillRect(0, 0, w, h);
+    
+    const now = Date.now();
+    const phaseElapsed = (now - phaseStartTime) / 1000;
+    const isStatic = now < staticEndTime;
+    const midpoint = (N - 1) / 2;
+    
+    for (let i = 0; i < N; i++) {
+      const distFromCenter = Math.abs(i - midpoint) / midpoint;
+      const envelope = Math.pow(Math.max(0, 1 - distFromCenter), 1.35) * maxBarHeight;
+      
+      if (transmissionPhase === 'silent') {
+        targetHeights[i] = 0.0;
+      } 
+      else if (transmissionPhase === 'powerup') {
+        const p = phaseElapsed / 1.1; // rise smoothly over 1.1s
+        if ((1 - distFromCenter) < p) {
+          // elegant rising wave pattern
+          const wave = 0.35 + 0.3 * Math.sin(phaseElapsed * 15 - distFromCenter * 10);
+          targetHeights[i] = Math.max(1.0, envelope * wave);
+        } else {
+          targetHeights[i] = 0.0;
+        }
+      } 
+      else if (transmissionPhase === 'active') {
+        let ampFactor = 0.05; // silent ambient hum
+        
+        if (isStatic) {
+          // static hiss response
+          ampFactor = 0.22 + 0.35 * Math.random();
+        } else if (voiceAnalyser) {
+          // Read actual real-time frequency data bytes dynamically
+          const fData = new Uint8Array(voiceAnalyser.frequencyBinCount);
+          voiceAnalyser.getByteFrequencyData(fData);
+          
+          // Map index in center-symmetric way to low-mid speech frequencies
+          const binIndex = Math.floor(1 + (1 - distFromCenter) * 45);
+          if (fData[binIndex] !== undefined) {
+            ampFactor = fData[binIndex] / 255.0;
+            // Add custom compression/vocal curve
+            ampFactor = Math.pow(ampFactor, 1.25);
+          }
+        } else {
+          // Fallback speaking simulation if audio off
+          const pulseNorm = 0.3 + 0.7 * Math.abs(Math.sin(now * 0.0015));
+          const waveVal = 0.18 + 0.52 * Math.sin(now * 0.024 - i * 0.45) + 0.30 * Math.random();
+          ampFactor = waveVal * pulseNorm;
+        }
+        
+        let targetH = envelope * ampFactor;
+        // Dynamic tiny jitter to keep it organic
+        targetH += (Math.random() * 2);
+        
+        if (distFromCenter > 0.90) {
+          targetH = Math.max(1.0, targetH * 0.4);
+        }
+        targetHeights[i] = Math.max(1.0, targetH);
+      } 
+      else if (transmissionPhase === 'powerdown') {
+        const p = phaseElapsed / 1.0; // collapse over 1.0s
+        if (distFromCenter < (1 - p)) {
+          targetHeights[i] = Math.max(1.0, 4.0 * (1 - p));
+        } else {
+          targetHeights[i] = 0.0;
+        }
+      }
+      
+      // smoothly interpolate height
+      currentHeights[i] += (targetHeights[i] - currentHeights[i]) * 0.22;
+      
+      if (currentHeights[i] > 0.01) {
+        const totalWidth = N * (barWidth + barSpacing) - barSpacing;
+        const startX = (w - totalWidth) / 2;
+        const x = startX + i * (barWidth + barSpacing) + barWidth / 2;
+        
+        // precise spectrum coloring
+        let barColor = '#00ff41'; // pure electric green
+        if (distFromCenter < 0.22) {
+          barColor = '#00cc33'; // Center teal-green
+        } else if (distFromCenter >= 0.75) {
+          barColor = '#39ff14'; // Outer bright neon green
+        }
+        
+        ctx.strokeStyle = barColor;
+        ctx.lineWidth = barWidth;
+        ctx.lineCap = 'round';
+        
+        ctx.beginPath();
+        const halfH = Math.max(0.1, currentHeights[i] / 2);
+        ctx.moveTo(x, centerY - halfH);
+        ctx.lineTo(x, centerY + halfH);
+        ctx.stroke();
+      }
+    }
+  };
+  render();
+};
+
+const onTransmissionEnded = () => {
+  const overlay = $('#to');
+  // Start Phase 4: Power Down
+  transmissionPhase = 'powerdown';
+  phaseStartTime = Date.now();
+  
+  if (transmissionAudio) {
+    try {
+      transmissionAudio.pause();
+    } catch(e){}
+  }
+  
+  playTransmissionStatic(0.80, 0.18);
+  tn(520, 'sine', 0.1, 0.07);
+  
+  setTimeout(() => {
+    if (vcAnimateId) cancelAnimationFrame(vcAnimateId);
+    overlay.style.transition = 'opacity 0.6s';
+    overlay.style.opacity = '0';
+    
+    setTimeout(() => {
+      overlay.style.display = 'none';
+      $('#de').style.display = 'block';
+      inD();
+    }, 600);
+  }, 1100);
+};
+
+const startTransmissionSequence = () => {
+  const overlay = $('#to');
+  overlay.style.display = 'flex';
+  overlay.style.opacity = '1';
+  document.body.style.background = '#000000';
+  
+  if ($('#to-skip')) {
+    $('#to-skip').onclick = () => {
+      if (transmissionAudio) {
+        try {
+          transmissionAudio.pause();
+          transmissionAudio.currentTime = 0;
+        } catch(e) {}
+      }
+      if (vcAnimateId) cancelAnimationFrame(vcAnimateId);
+      overlay.style.display = 'none';
+      $('#de').style.display = 'block';
+      inD();
+    };
+  }
+  
+  playPowerOutageEffect();
+  
+  // Start Phase 1: Silent
+  transmissionPhase = 'silent';
+  phaseStartTime = Date.now();
+  
+  setTimeout(() => {
+    initTransmissionAudio();
+    drawVisualizer();
+    
+    // Start Phase 2: Power Up
+    transmissionPhase = 'powerup';
+    phaseStartTime = Date.now();
+    
+    setTimeout(() => {
+      // Start Phase 3: Speak (MP3 dynamic playback)
+      transmissionPhase = 'active';
+      phaseStartTime = Date.now();
+      
+      tn(1200, 'sine', 0.1, 0.05);
+      setTimeout(() => tn(1500, 'sine', 0.12, 0.04), 120);
+      
+      if (transmissionAudio) {
+        transmissionAudio.play().then(() => {
+          console.log("[Audio] Dynamic stream playback started.");
+        }).catch(err => {
+          console.warn("[Audio] Direct audio playback blocked:", err);
+        });
+        
+        transmissionAudio.onended = () => {
+          console.log("[Audio] Stream ended naturally.");
+          onTransmissionEnded();
+        };
+      } else {
+        // Safe fallback simulation
+        console.log("[Audio] Audio source unavailable. Carrying out fallback simulation...");
+        setTimeout(() => {
+          onTransmissionEnded();
+        }, 72500);
+      }
+      
+    }, 1100);
+  }, 500);
+};
+
+// Phase 2: Login
+let fail=0;
+let verifying=false;
+$('#lb').onclick=()=>{
+ if(verifying)return;
+ if($('#l-id').value.trim()!=="" && $('#l-pwd').value.trim()!=="" && $('#l-code').value.trim()!==""){
+  verifying=true;
+  $('#lc').innerHTML="VERIFYING...";
+  $('#lc').style.color="inherit";
+  $('#lo-box').classList.add('crt');
+  setTimeout(()=>$('#lo-box').classList.remove('crt'), 300);
+  let chk=["AGENT ID CONFIRMED", "CLEARANCE UMBRA", "ENCRYPTION AES-256"];
+  let id=0, iv=setInterval(()=>{
+   if(id<chk.length){$('#lc').innerHTML+=`<div>[✓] ${chk[id]}</div>`;sfx.st(id);id++}
+   else{clearInterval(iv);sfx.ch();$('#lc').innerHTML="<span style='color:#fff'>ACCESS GRANTED</span>";setTimeout(()=>{sfx.g();$('#lo').style.display='none';startTransmissionSequence();},800)}
+  },200);
+ }else{
+  fail++;sfx.w();$('#l-pwd').classList.add('err');$('#l-id').classList.add('err');$('#l-code').classList.add('err');
+  $('#lc').innerHTML=`<span style="color:var(--red)">MISSING CREDENTIALS — ATTEMPT ${fail}/3</span>`;
+  if(fail>=3){$('#lo-box').innerHTML=`<div class="crt" style="background:var(--red);color:#000;display:flex;align-items:center;justify-content:center;height:100%;width:100%;padding:40px;"><h1>LOCKOUT</h1></div>`;sfx.al();}
+ }
+};
+$('#l-id').onkeypress=e=>{if(e.key==='Enter')$('#l-pwd').focus()};
+$('#l-pwd').onkeypress=e=>{if(e.key==='Enter')$('#l-code').focus()};
+$('#l-code').onkeypress=e=>{if(e.key==='Enter')$('#lb').click()};
+$('#l-id').addEventListener('input', function(){ this.classList.remove('err'); });
+$('#l-pwd').addEventListener('input', function(){ this.classList.remove('err'); });
+$('#l-code').addEventListener('input', function(){ this.classList.remove('err'); });
+
+// Phase 3: Desktop
+const inD=()=>{
+ if(window.desktopInitialized) return;
+ window.desktopInitialized = true;
+ setInterval(()=>{
+   let d=new Date();
+   let hh = String(d.getUTCHours()).padStart(2,'0');
+   let mm = String(d.getUTCMinutes()).padStart(2,'0');
+   let ss = String(d.getUTCSeconds()).padStart(2,'0');
+   if(window.innerWidth > 768) {
+      $('#clk').innerText=`${hh}:${mm}:${ss} ZULU`;
+   } else {
+      $('#clk').innerText=`${hh}:${mm}`;
+   }
+ },1000);
+ 
+ setInterval(()=>{
+    let fl = $('#flog');
+    if(fl) {
+      let d=document.createElement('div');
+      d.innerText="[LOG] ANÁLISIS COMPLETO "+Math.floor(Math.random()*99);
+      fl.prepend(d);
+      if(fl.children.length>20) fl.lastChild.remove();
+    }
+  },3000);
+ setInterval(()=>{if(Math.random()>.8){document.body.classList.add('crt');sfx.g();setTimeout(()=>document.body.classList.remove('crt'),100)}},40000);
+};
+
+// Menu & Windows
+const togMenu = () => {
+ let p=$('#sp');
+ if(p.classList.contains('opn')){ p.classList.remove('opn'); sfx.p(); }
+ else { p.classList.add('opn'); sfx.c(); }
+}
+$('#h-btn').onclick = togMenu;
+$('#h-cls').onclick = togMenu;
+
+$$('.n-it').forEach(e=>e.addEventListener('mouseenter',()=>sfx.c()));
+$$('.w-cls').forEach(e=>e.onclick=function(){
+  const win = this.parentElement.parentElement;
+  win.style.display='none';
+  sfx.p();
+  
+  if (win.id === 'm7') {
+    if (window.VoiceNotification) {
+      window.VoiceNotification.dismiss(true);
+    }
+  }
+  
+  if (win.id === 'm-aud-player') {
+    const aud = $('#m-aud-src');
+    if (aud) {
+      try {
+        aud.pause();
+        aud.currentTime = 0;
+      } catch(ex){}
+    }
+  }
+
+  // Only reset layout if it wasn't a viewer window
+  if (this.dataset.viewer) {
+    sfx.p();
+    return;
+  }
+
+  $('#m1').classList.add('active');
+  $$('.n-it').forEach(n=>n.classList.remove('act'));
+  $$('.n-it')[0].classList.add('act');
+});
+
+window.openImg = (src, name) => {
+  $('#m-img-src').src = src;
+  $('#m-img-tit').innerText = '🖼 ' + name;
+  $('#m-img').style.display = 'flex';
+  sfx.b();
+};
+
+window.openAud = (src, name) => {
+  const player = $('#m-aud-player');
+  const aud = $('#m-aud-src');
+  
+  // If the source is a screenapp web URL, point to the proxy endpoint with the correct share ID
+  let audioSource = src;
+  if (src.includes('screenapp.io')) {
+    const match = src.match(/\/app\/v\/([a-zA-Z0-9_\-]+)/);
+    const id = match ? match[1] : 'JMxasnAJst';
+    audioSource = `/api/transmission-audio?id=${id}`;
+  }
+  
+  // Ensure we have an audio element (not an iframe)
+  if (aud.tagName !== 'AUDIO') {
+      let newAud = document.createElement('audio');
+      newAud.id = 'm-aud-src';
+      newAud.controls = true;
+      newAud.style.width = '100%';
+      newAud.style.filter = 'invert(1) hue-rotate(180deg)';
+      aud.parentNode.replaceChild(newAud, aud);
+  }
+  
+  const currentAud = $('#m-aud-src');
+  currentAud.src = audioSource;
+  $('#m-aud-name').innerText = name;
+  $('#m-aud-tit').innerText = '🎵 ' + name;
+  player.style.display = 'flex';
+  sfx.b();
+  currentAud.play().catch(e => console.log("Auto-play blocked or failed", e));
+};
+
+const drawRedLines = () => {
+  const board = document.getElementById('night-cargo-board');
+  if (!board || board.offsetParent === null) return;
+  const svg = document.getElementById('board-connections-svg');
+  if (!svg) return;
+  
+  const steps = ['card-step1', 'card-step2', 'card-step3', 'card-step4', 'card-conclusion'];
+  const boardRect = board.getBoundingClientRect();
+  const rects = steps.map(id => {
+    const el = document.getElementById(id);
+    if (!el) return null;
+    const rect = el.getBoundingClientRect();
+    return {
+      x: (rect.left + rect.width / 2) - boardRect.left,
+      y: (rect.top + rect.height / 2) - boardRect.top
+    };
+  }).filter(Boolean);
+  
+  let pathsHtml = '';
+  for (let i = 0; i < rects.length - 1; i++) {
+    const p1 = rects[i];
+    const p2 = rects[i+1];
+    pathsHtml += `
+      <!-- Line Shadow -->
+      <line x1="${p1.x}" y1="${p1.y}" x2="${p2.x}" y2="${p2.y}" stroke="rgba(0,0,0,0.8)" stroke-width="4" />
+      <!-- Red Thread -->
+      <line x1="${p1.x}" y1="${p1.y}" x2="${p2.x}" y2="${p2.y}" stroke="#ef4444" stroke-width="2" stroke-dasharray="4,6" />
+    `;
+  }
+  svg.innerHTML = pathsHtml;
+};
+
+window.addEventListener('resize', drawRedLines);
+
+window.openMod=(id)=>{
+ $$('.win').forEach(w=>w.style.display='none');
+ $$('.n-it').forEach(n=>n.classList.remove('act'));
+ 
+ if (window.VoiceNotification) {
+   if (id === 'm7') {
+     window.VoiceNotification.trigger();
+   } else {
+     window.VoiceNotification.dismiss(true);
+   }
+ }
+ 
+ // Find corresponding n-it and make act
+ let tgtEl = [...$$('.n-it')].find(el => el.getAttribute('onclick') === `openMod('${id}')` || el.getAttribute('data-tgt') === id);
+ if(tgtEl) tgtEl.classList.add('act');
+ 
+ if(id==='m1') {
+  $('#m1').classList.add('active');
+ } else {
+  $('#m1').classList.remove('active');
+  let x = $(`#${id}`);
+  if(x) {
+    x.style.display='flex';
+    if (id === 'm6') {
+      setTimeout(drawRedLines, 100);
+    }
+  }
+ }
+ $('#sp').classList.remove('opn');
+ sfx.p();
+};
+
+// Desktop icons
+$$('.d-icn').forEach(e => {
+  if (e.hasAttribute('onclick')) return;
+  e.onclick = function() {
+    let t = this.dataset.tgt;
+    if(!t && !this.classList.contains('rst')) t = 'm2';
+    if(this.classList.contains('rst')) {
+      // handled by rst listener
+    } else {
+      openMod(t);
+    }
+  }
+});
+
+// Modal UMBRA7
+let cTgt=null;
+$$('.rst').forEach(e=>{
+ e.addEventListener('click',function(ev){
+  ev.stopPropagation();
+  cTgt=this.dataset.tgt||'';
+  $('#um').style.display='flex';$('#ump').value='';$('#ump').classList.remove('err');$('#ump').focus();sfx.b();
+  $('#sp').classList.remove('opn'); // close menu
+ });
+});
+$('#cabtn').onclick=()=>$('#um').style.display='none';
+$('#ubtn').onclick=()=>{
+ if($('#ump').value.toUpperCase()==='UMBRA7'){
+  sfx.ch();$('#um').style.display='none';document.body.classList.add('crt');setTimeout(()=>document.body.classList.remove('crt'),150);
+  if(cTgt){ openMod(cTgt); if(cTgt==='m4') ldT(3); }
+ }else{
+  sfx.w();$('#ump').classList.add('err');$('#ump').value='';
+ }
+};
+$('#ump').onkeypress=e=>{if(e.key==='Enter')$('#ubtn').click()};
+
+// Interrogation
+window.ldT=(i)=>{
+ sfx.p();
+ let ivw = $('#ivw');
+ if(ivw) {
+  if(i===1){
+   ivw.innerHTML=`<pre>
+────────────────────────────────────────
+TRANSCRIPCIÓN: SESIÓN 001
+[00:04:12] AGENTE: Sabemos dónde fue.
+[00:04:18] ALPHA-7: Nada que decir.
+[00:20:19] AGENTE: ¿Qué significa?
+[00:20:24] ALPHA-7: Ya los activaron.
+────────────────────────────────────────</pre>`;
+  }else{
+   ivw.innerHTML=`<pre style="color:var(--tc)">[SESIÓN CORRUPTA / BORRADA]</pre>`;
+  }
+ }
+};
+let iplayBtn = $('#iplay');
+if(iplayBtn) iplayBtn.onclick=sfx.vx;
+
+// Voice Notification Engine
+class VoiceNotificationClass {
+  constructor() {
+    this.triggerTimer = null;
+    this.interferenceTimer = null;
+    this.isPlaying = false;
+    this.audioElement = null;
+    this.audioCtx = null;
+    this.analyser = null;
+    this.source = null;
+    this.dataArray = null;
+    this.hasInitializedDom = false;
+  }
+  
+  initDom() {
+    if (this.hasInitializedDom) return;
+    this.hasInitializedDom = true;
+    
+    // Create actual audio element
+    this.audioElement = document.createElement('audio');
+    this.audioElement.id = 'vn-audio';
+    this.audioElement.src = '/api/transmission-audio?id=JFKpeXK2NI';
+    this.audioElement.crossOrigin = 'anonymous';
+    this.audioElement.style.display = 'none';
+    document.body.appendChild(this.audioElement);
+    
+    // Wire events
+    this.audioElement.onended = () => {
+      this.isPlaying = false;
+      const playBtn = document.getElementById('vn-play-btn');
+      if (playBtn) playBtn.innerText = '▶';
+      
+      // Auto-dismiss after 3 seconds
+      setTimeout(() => {
+        if (!this.isPlaying) {
+          this.dismiss(false);
+        }
+      }, 3000);
+    };
+    
+    this.audioElement.ontimeupdate = () => {
+      const current = this.formatTime(this.audioElement.currentTime);
+      const duration = this.formatTime(this.audioElement.duration || 0);
+      const timeEl = document.getElementById('vn-time');
+      if (timeEl) timeEl.innerText = `${current} / ${duration}`;
+      
+      const pct = (this.audioElement.duration) ? (this.audioElement.currentTime / this.audioElement.duration) * 100 : 0;
+      const progressFill = document.getElementById('vn-progress-fill');
+      if (progressFill) progressFill.style.width = `${pct}%`;
+    };
+    
+    // Wire interaction buttons
+    const playBtn = document.getElementById('vn-play-btn');
+    if (playBtn) {
+      playBtn.onclick = () => {
+        if (this.isPlaying) {
+          this.audioElement.pause();
+          this.isPlaying = false;
+          playBtn.innerText = '▶';
+        } else {
+          this.playAudio();
+        }
+      };
+    }
+    
+    const closeBtn = document.getElementById('vn-close-btn');
+    if (closeBtn) {
+      closeBtn.onclick = () => {
+        this.dismiss(true);
+      };
+    }
+  }
+  
+  formatTime(secs) {
+    if (isNaN(secs)) return "0:00";
+    const m = Math.floor(secs / 60);
+    const s = Math.floor(secs % 60);
+    return `${m}:${s < 10 ? '0' : ''}${s}`;
+  }
+  
+  initAudioContext() {
+    if (this.audioCtx) return;
+    try {
+      this.audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      this.analyser = this.audioCtx.createAnalyser();
+      this.analyser.fftSize = 64; 
+      this.source = this.audioCtx.createMediaElementSource(this.audioElement);
+      this.source.connect(this.analyser);
+      this.analyser.connect(this.audioCtx.destination);
+      this.dataArray = new Uint8Array(this.analyser.frequencyBinCount);
+    } catch (e) {
+      console.warn("Could not create Web Audio API graph:", e);
+    }
+  }
+  
+  playAudio() {
+    if (!this.audioElement) return;
+    this.initAudioContext();
+    if (this.audioCtx && this.audioCtx.state === 'suspended') {
+      this.audioCtx.resume();
+    }
+    
+    this.audioElement.play().then(() => {
+      this.isPlaying = true;
+      const playBtn = document.getElementById('vn-play-btn');
+      if (playBtn) playBtn.innerText = '⏸';
+      this.updateWaveform();
+      this.scheduleSignalInterference();
+    }).catch(err => {
+      console.warn("Audio autoplay blocked or failed, starting visual simulation anyway:", err);
+      this.isPlaying = true;
+      const playBtn = document.getElementById('vn-play-btn');
+      if (playBtn) playBtn.innerText = '⏸';
+      this.updateWaveform();
+      this.scheduleSignalInterference();
+    });
+  }
+  
+  updateWaveform() {
+    if (!this.isPlaying) {
+      this.drawFlatWaveform();
+      return;
+    }
+    
+    let hasActiveSignal = false;
+    if (this.analyser && this.dataArray) {
+      this.analyser.getByteFrequencyData(this.dataArray);
+      for (let i = 0; i < this.dataArray.length; i++) {
+        if (this.dataArray[i] > 0) hasActiveSignal = true;
+      }
+    }
+    
+    if (hasActiveSignal && this.dataArray) {
+      this.drawWaveform(this.dataArray);
+    } else {
+      this.drawSimulatedWaveform();
+    }
+    
+    if (this.isPlaying) {
+      requestAnimationFrame(() => this.updateWaveform());
+    }
+  }
+  
+  drawWaveform(data) {
+    const canvas = document.getElementById('vn-canvas');
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    const cy = canvas.height / 2;
+    
+    for (let i = 0; i < 30; i++) {
+      const byteVal = data[i] || 0;
+      let amplitude = byteVal / 255.0;
+      if (amplitude < 0.1) amplitude = 0.1;
+      
+      let h = amplitude * (canvas.height - 4);
+      if (h < 2) h = 2;
+      
+      const x = (i + 0.5) * (canvas.width / 30);
+      const y1 = cy - h/2;
+      const y2 = cy + h/2;
+      
+      ctx.beginPath();
+      ctx.moveTo(x, y1 + 1);
+      ctx.lineTo(x, y2 - 1);
+      ctx.lineWidth = 2;
+      ctx.lineCap = 'round';
+      ctx.strokeStyle = '#00ff41';
+      ctx.stroke();
+    }
+  }
+  
+  drawSimulatedWaveform() {
+    const canvas = document.getElementById('vn-canvas');
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    const cy = canvas.height / 2;
+    const time = Date.now() * 0.006;
+    
+    for (let i = 0; i < 30; i++) {
+      let val = Math.sin(i * 0.25 + time) * Math.cos(i * 0.15 - time * 0.4);
+      val = Math.abs(val);
+      val = 0.1 + val * 0.75 + Math.random() * 0.1;
+      if (val > 1) val = 1;
+      
+      let h = val * (canvas.height - 4);
+      if (h < 2) h = 2;
+      
+      const x = (i + 0.5) * (canvas.width / 30);
+      const y1 = cy - h/2;
+      const y2 = cy + h/2;
+      
+      ctx.beginPath();
+      ctx.moveTo(x, y1 + 1);
+      ctx.lineTo(x, y2 - 1);
+      ctx.lineWidth = 2;
+      ctx.lineCap = 'round';
+      ctx.strokeStyle = '#00ff41';
+      ctx.stroke();
+    }
+  }
+  
+  drawFlatWaveform() {
+    const canvas = document.getElementById('vn-canvas');
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    const cy = canvas.height / 2;
+    
+    for (let i = 0; i < 30; i++) {
+      let h = 2;
+      const x = (i + 0.5) * (canvas.width / 30);
+      const y1 = cy - h/2;
+      const y2 = cy + h/2;
+      
+      ctx.beginPath();
+      ctx.moveTo(x, y1 + 1);
+      ctx.lineTo(x, y2 - 1);
+      ctx.lineWidth = 2;
+      ctx.lineCap = 'round';
+      ctx.strokeStyle = '#00ff41';
+      ctx.stroke();
+    }
+  }
+  
+  scheduleSignalInterference() {
+    if (!this.isPlaying) return;
+    const minS = 15;
+    const maxS = 25;
+    const delay = (Math.random() * (maxS - minS) + minS) * 1000;
+    
+    this.interferenceTimer = setTimeout(() => {
+      if (!this.isPlaying) return;
+      const panel = document.getElementById('vn-panel');
+      if (panel) {
+        const origBdr = panel.style.borderColor;
+        const origOpa = panel.style.opacity;
+        
+        panel.style.opacity = '0.6';
+        panel.style.borderColor = '#ff2200';
+        
+        setTimeout(() => {
+          panel.style.opacity = origOpa || '1';
+          panel.style.borderColor = origBdr || '';
+        }, 60);
+      }
+      this.scheduleSignalInterference();
+    }, delay);
+  }
+  
+  trigger() {
+    // Clear any previous scheduled trigger or active playback
+    this.dismiss(true);
+    
+    // Initialize DOM if not done yet
+    this.initDom();
+    
+    // Reset state & show panel with delay
+    this.triggerTimer = setTimeout(() => {
+      const panel = document.getElementById('vn-panel');
+      if (!panel) return;
+      
+      panel.style.display = 'flex';
+      // Force style recalculation for animations to trigger
+      panel.getBoundingClientRect();
+      panel.classList.add('vn-shown');
+      
+      // Start loading typewriter screen
+      document.getElementById('vn-screen-intercept').style.display = 'flex';
+      document.getElementById('vn-screen-player').style.display = 'none';
+      
+      const typewriterText = "INTERCEPTANDO SEÑAL...";
+      const typeContainer = document.getElementById('vn-typewriter');
+      if (typeContainer) {
+        typeContainer.innerHTML = '';
+        let tIndex = 0;
+        const typeInterval = setInterval(() => {
+          if (tIndex < typewriterText.length && document.getElementById('vn-panel').classList.contains('vn-shown')) {
+            typeContainer.innerHTML += typewriterText.charAt(tIndex);
+            tIndex++;
+          } else {
+            clearInterval(typeInterval);
+          }
+        }, 40);
+      }
+      
+      // Flicker at 1.2s and then start audio
+      setTimeout(() => {
+        if (!panel.classList.contains('vn-shown')) return;
+        
+        let fCount = 0;
+        const vnOverlayFlickerId = "vn-flicker"; // arbitrary variable reference
+        const flickerInterval = setInterval(() => {
+          if (fCount < 6 && panel.classList.contains('vn-shown')) {
+            panel.style.opacity = (fCount % 2 === 0) ? '0.3' : '1';
+            fCount++;
+          } else {
+            clearInterval(flickerInterval);
+            panel.style.opacity = '1';
+            
+            // Switch to player view
+            const sIntercept = document.getElementById('vn-screen-intercept');
+            const sPlayer = document.getElementById('vn-screen-player');
+            if (sIntercept) sIntercept.style.display = 'none';
+            if (sPlayer) sPlayer.style.display = 'flex';
+            
+            this.playAudio();
+          }
+        }, 40);
+      }, 1200);
+      
+    }, 6000); // Wait exactly 6 seconds after folder opens
+  }
+  
+  dismiss(instantly = false) {
+    if (this.triggerTimer) {
+      clearTimeout(this.triggerTimer);
+      this.triggerTimer = null;
+    }
+    if (this.interferenceTimer) {
+      clearTimeout(this.interferenceTimer);
+      this.interferenceTimer = null;
+    }
+    
+    this.isPlaying = false;
+    if (this.audioElement) {
+      try {
+        this.audioElement.pause();
+        this.audioElement.currentTime = 0;
+      } catch (e) {}
+    }
+    
+    const playBtn = document.getElementById('vn-play-btn');
+    if (playBtn) playBtn.innerText = '▶';
+    
+    const progressFill = document.getElementById('vn-progress-fill');
+    if (progressFill) progressFill.style.width = '0%';
+    
+    const timeEl = document.getElementById('vn-time');
+    if (timeEl) timeEl.innerText = "0:00 / 0:00";
+    
+    const panel = document.getElementById('vn-panel');
+    if (panel) {
+      panel.classList.remove('vn-shown');
+      if (instantly) {
+        panel.style.display = 'none';
+      } else {
+        setTimeout(() => {
+          if (!panel.classList.contains('vn-shown')) {
+            panel.style.display = 'none';
+          }
+        }, 400);
+      }
+    }
+  }
+}
+
+const VoiceNotification = new VoiceNotificationClass();
+window.VoiceNotification = VoiceNotification;
+
+// Security Anti-Right-Click
+document.addEventListener('contextmenu',e=>{e.preventDefault();let c=$('#ctxm');$('#csid').innerText=Math.floor(Math.random()*999);c.style.display='block';c.style.left=e.pageX+'px';c.style.top=e.pageY+'px';sfx.w();setTimeout(()=>c.style.display='none',1500)});
+</script>
+</body>
+</html>

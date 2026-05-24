@@ -1,0 +1,6 @@
+{
+  "name": "DSO Secure OS",
+  "description": "Tactical classified government intelligence interface and symmetrical voice waveform transmission receiver.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
