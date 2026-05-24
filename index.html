@@ -1151,12 +1151,15 @@ let phaseStartTime = 0;
 let transmissionAudio = null;
 let audioSourceNode = null;
 
-const initTransmissionAudio = () => {
+const initTransmissionAudio = async () => {
   try {
     // Always instantiate HTML Audio element so it performs lifecycle and audio ends correctly
     transmissionAudio = new Audio();
     transmissionAudio.crossOrigin = "anonymous";
-    transmissionAudio.src = "/api/transmission-audio?id=kNV5bPTxa5";
+    const resolvedUrl = await window.resolveAudioUrl("kNV5bPTxa5");
+    if (resolvedUrl) {
+      transmissionAudio.src = resolvedUrl;
+    }
   } catch (e) {
     console.warn("Audio element initialization failed:", e);
   }
@@ -1591,6 +1594,17 @@ $$('.w-cls').forEach(e=>e.onclick=function(){
   $$('.n-it')[0].classList.add('act');
 });
 
+window.resolveAudioUrl = async (id) => {
+  try {
+    const res = await fetch('https://api.screenapp.io/v2/files/shared/' + id);
+    const json = await res.json();
+    return json?.data?.file?.alternativeFormats?.mp3?.url || json?.data?.file?.url || null;
+  } catch (e) {
+    console.error("Failed to resolve audio form screenapp", e);
+    return null;
+  }
+};
+
 window.openImg = (src, name) => {
   $('#m-img-src').src = src;
   $('#m-img-tit').innerText = '🖼 ' + name;
@@ -1598,16 +1612,19 @@ window.openImg = (src, name) => {
   sfx.b();
 };
 
-window.openAud = (src, name) => {
+window.openAud = async (src, name) => {
   const player = $('#m-aud-player');
   const aud = $('#m-aud-src');
   
-  // If the source is a screenapp web URL, point to the proxy endpoint with the correct share ID
+  // If the source is a screenapp web URL, resolve it dynamically
   let audioSource = src;
   if (src.includes('screenapp.io')) {
     const match = src.match(/\/app\/v\/([a-zA-Z0-9_\-]+)/);
     const id = match ? match[1] : 'JMxasnAJst';
-    audioSource = `/api/transmission-audio?id=${id}`;
+    const resolvedUrl = await window.resolveAudioUrl(id);
+    if (resolvedUrl) {
+      audioSource = resolvedUrl;
+    }
   }
   
   // Ensure we have an audio element (not an iframe)
@@ -1764,16 +1781,21 @@ class VoiceNotificationClass {
     this.hasInitializedDom = false;
   }
   
-  initDom() {
+  async initDom() {
     if (this.hasInitializedDom) return;
     this.hasInitializedDom = true;
     
     // Create actual audio element
     this.audioElement = document.createElement('audio');
     this.audioElement.id = 'vn-audio';
-    this.audioElement.src = '/api/transmission-audio?id=JFKpeXK2NI';
     this.audioElement.crossOrigin = 'anonymous';
     this.audioElement.style.display = 'none';
+    
+    const resolvedUrl = await window.resolveAudioUrl("JFKpeXK2NI");
+    if (resolvedUrl) {
+      this.audioElement.src = resolvedUrl;
+    }
+    
     document.body.appendChild(this.audioElement);
     
     // Wire events
