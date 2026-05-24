@@ -10,7 +10,7 @@
 <style>
 :root{--bg:#080808;--bg-d:#0a0a0a;--bg-p:#0d0d0d;--bg-c:#111;--bdr:#1a2e1a;--grn:#00ff41;--red:#ff2200;--txt:#c8c8c8;--tm:#666;--tc:#888;--f:'Courier New',monospace;--fa:'Arial Narrow',sans-serif}
 *{box-sizing:border-box;user-select:none;cursor:crosshair;margin:0;padding:0}
-body{background:var(--bg);color:var(--txt);font-family:var(--f);overflow:hidden;width:100vw;height:100vh}
+body{background:var(--bg);color:var(--txt);font-family:var(--f);overflow:hidden;width:100vw;height:100dvh;overscroll-behavior:none}
 body::before{content:"";position:fixed;inset:0;background:url('data:image/svg+xml;utf8,<svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg"><filter id="f"><feTurbulence type="fractalNoise" baseFrequency="0.8" numOctaves="3" stitchTiles="stitch"/></filter><rect width="100%" height="100%" filter="url(%23f)" opacity="0.03"/></svg>');pointer-events:none;z-index:9998}
 body::after{content:"";position:fixed;inset:0;background:linear-gradient(rgba(18,16,16,0) 50%,rgba(0,0,0,0.2) 50%);background-size:100% 2px;pointer-events:none;z-index:9999}
 .crt{animation:glitch .15s linear infinite}
@@ -98,7 +98,7 @@ h1,h2,h3{font-family:var(--fa);letter-spacing:.15em;font-weight:normal}
 #de{background:var(--bg-d)}
 .d-wp{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;opacity:.05;z-index:0;pointer-events:none}
 .d-wp h1{font-size:25vw;color:var(--grn);text-align:center;line-height:.8;margin:0}
-.d-area{position:fixed;top:72px;bottom:32px;left:0;right:0;overflow-y:auto;padding:16px;z-index:10}
+.d-area{position:fixed;top:72px;bottom:32px;left:0;right:0;overflow-y:auto;overflow-x:hidden;padding:16px;z-index:10;overscroll-behavior:contain;-webkit-overflow-scrolling:touch}
 @media(max-width:768px){.d-area{top:68px}}
 
 /* Sidebar */
@@ -144,17 +144,17 @@ h1,h2,h3{font-family:var(--fa);letter-spacing:.15em;font-weight:normal}
 .d-icn-cls.eo{color:#333}
 
 /* Windows */
-.win{position:relative;background:var(--bg-p);border:1px solid var(--tc);display:none;flex-direction:column;z-index:15;box-shadow:0 0 30px rgba(0,0,0,.8);max-width:960px;margin:0 auto 20px;height:calc(100vh - 150px);max-height:800px}
+.win{position:relative;background:var(--bg-p);border:1px solid var(--tc);display:none;flex-direction:column;z-index:15;box-shadow:0 0 30px rgba(0,0,0,.8);max-width:960px;margin:0 auto 20px;height:calc(100dvh - 150px);max-height:800px}
 #m-img, #m-aud-player { position:fixed; top:50%; left:50%; transform:translate(-50%,-50%); width:90%; height:80%; z-index:100; margin:0; }
 @media(max-width:768px){
-  .win{max-width:100%;border:none;height:auto;min-height:calc(100vh - 100px);margin:0;box-shadow:none}
+  .win{max-width:100%;border:none;height:auto;min-height:calc(100dvh - 100px);max-height:none;margin:0;box-shadow:none}
   #m-img, #m-aud-player { width:100%; height:100%; top:0; left:0; transform:none; }
 }
 .w-hdr{background:var(--bg-c);padding:10px 15px;border-bottom:1px solid var(--tc);display:flex;justify-content:space-between;align-items:center;font-family:var(--fa)}
 .w-cls{color:var(--tm);cursor:pointer;font-size:1.2em;font-weight:bold}
 .w-cls:hover{color:var(--red)}
 .w-bdy{padding:16px;overflow-y:auto;flex:1;font-size:13px;word-break:break-word}
-@media(max-width:768px){.w-bdy{padding:12px;font-size:11px}}
+@media(max-width:768px){.w-bdy{padding:12px;font-size:11px;overflow-y:visible}}
 
 /* Module specific: Forensics Table -> Cards */
 .f-grid{display:grid;grid-template-columns:1fr 300px;gap:15px;height:100%}
@@ -182,7 +182,7 @@ h1,h2,h3{font-family:var(--fa);letter-spacing:.15em;font-weight:normal}
 /* Module specific: Map */
 #m-bd{position:relative;width:100%;min-height:500px;background:#111;overflow:hidden;padding:20px}
 @media(max-width:768px){
- #m-bd{display:flex;flex-direction:column;gap:15px;overflow-y:auto;padding:15px;padding-left:30px;min-height:auto}
+ #m-bd{display:flex;flex-direction:column;gap:15px;overflow-y:visible;padding:15px;padding-left:30px;min-height:auto}
  .m-svg{display:none}
  #m-bd::before{content:"";position:absolute;left:20px;top:0;bottom:0;width:2px;background:repeating-linear-gradient(to bottom, var(--tc) 0, var(--tc) 5px, transparent 5px, transparent 10px);z-index:1}
 }
@@ -409,7 +409,7 @@ h1,h2,h3{font-family:var(--fa);letter-spacing:.15em;font-weight:normal}
         <div>📁 ARCHIVO DE EVIDENCIA: OPERACIÓN CARGA NOCTURNA</div>
         <div class="w-cls">× CERRAR</div>
       </div>
-      <div class="w-bdy" style="padding:0; overflow-y:auto; font-family:'Courier New', monospace; color:#eee; background-color:#121211; background-image:radial-gradient(circle at 50% 40%, rgba(26,26,24,0.95) 0%, rgba(10,10,10,0.98) 100%), repeating-linear-gradient(rgba(0,0,0,0.1) 0px, rgba(0,0,0,0.1) 1px, transparent 1px, transparent 8px), repeating-linear-gradient(90deg, rgba(0,0,0,0.1) 0px, rgba(0,0,0,0.1) 1px, transparent 1px, transparent 8px); background-blend-mode:multiply; position:relative;">
+      <div class="w-bdy" style="padding:0; font-family:'Courier New', monospace; color:#eee; background-color:#121211; background-image:radial-gradient(circle at 50% 40%, rgba(26,26,24,0.95) 0%, rgba(10,10,10,0.98) 100%), repeating-linear-gradient(rgba(0,0,0,0.1) 0px, rgba(0,0,0,0.1) 1px, transparent 1px, transparent 8px), repeating-linear-gradient(90deg, rgba(0,0,0,0.1) 0px, rgba(0,0,0,0.1) 1px, transparent 1px, transparent 8px); background-blend-mode:multiply; position:relative;">
         
         <!-- Background decorative vignette overlays to feel like a gritty intelligence room spotlight -->
         <div style="position:absolute; inset:0; box-shadow:inset 0 0 100px rgba(0,0,0,0.95); pointer-events:none; z-index:1;"></div>
@@ -830,7 +830,7 @@ h1,h2,h3{font-family:var(--fa);letter-spacing:.15em;font-weight:normal}
         <div>📁 EXPEDIENTE CLASIFICADO: UBICACIÓN ACTUAL DEL CARGAMENTO</div>
         <div class="w-cls">× CERRAR</div>
       </div>
-      <div class="w-bdy" style="padding:0; overflow-y:auto; font-family:'Courier New', monospace; color:#eee; background-color:#121211; background-image:radial-gradient(circle at 50% 40%, rgba(26,26,24,0.95) 0%, rgba(10,10,10,0.98) 100%), repeating-linear-gradient(rgba(0,0,0,0.1) 0px, rgba(0,0,0,0.1) 1px, transparent 1px, transparent 8px), repeating-linear-gradient(90deg, rgba(0,0,0,0.1) 0px, rgba(0,0,0,0.1) 1px, transparent 1px, transparent 8px); background-blend-mode:multiply; position:relative;">
+      <div class="w-bdy" style="padding:0; font-family:'Courier New', monospace; color:#eee; background-color:#121211; background-image:radial-gradient(circle at 50% 40%, rgba(26,26,24,0.95) 0%, rgba(10,10,10,0.98) 100%), repeating-linear-gradient(rgba(0,0,0,0.1) 0px, rgba(0,0,0,0.1) 1px, transparent 1px, transparent 8px), repeating-linear-gradient(90deg, rgba(0,0,0,0.1) 0px, rgba(0,0,0,0.1) 1px, transparent 1px, transparent 8px); background-blend-mode:multiply; position:relative;">
         
         <!-- Background decorative vignette overlays -->
         <div style="position:absolute; inset:0; box-shadow:inset 0 0 100px rgba(0,0,0,0.95); pointer-events:none; z-index:1;"></div>
@@ -1153,10 +1153,12 @@ let audioSourceNode = null;
 
 const initTransmissionAudio = async () => {
   try {
-    // Always instantiate HTML Audio element so it performs lifecycle and audio ends correctly
-    transmissionAudio = new Audio();
-    transmissionAudio.crossOrigin = "anonymous";
-    transmissionAudio.src = "/api/transmission-audio?id=kNV5bPTxa5";
+    // Only instantiate if not already done by login interaction
+    if (!transmissionAudio) {
+      transmissionAudio = new Audio();
+      transmissionAudio.crossOrigin = "anonymous";
+      transmissionAudio.src = "/api/transmission-audio?id=kNV5bPTxa5";
+    }
   } catch (e) {
     console.warn("Audio element initialization failed:", e);
   }
@@ -1503,6 +1505,15 @@ let fail=0;
 let verifying=false;
 $('#lb').onclick=()=>{
  if(verifying)return;
+ 
+ // Pre-initialize and unlock transmission audio during click gesture
+ if (!transmissionAudio) {
+   transmissionAudio = new Audio();
+   transmissionAudio.crossOrigin = "anonymous";
+   transmissionAudio.src = "/api/transmission-audio?id=kNV5bPTxa5";
+   transmissionAudio.play().then(() => transmissionAudio.pause()).catch(e=>{});
+ }
+ 
  if($('#l-id').value.trim()!=="" && $('#l-pwd').value.trim()!=="" && $('#l-code').value.trim()!==""){
   verifying=true;
   $('#lc').innerHTML="VERIFYING...";
@@ -1775,7 +1786,7 @@ class VoiceNotificationClass {
     this.hasInitializedDom = false;
   }
   
-  async initDom() {
+  initDom() {
     if (this.hasInitializedDom) return;
     this.hasInitializedDom = true;
     
@@ -1859,20 +1870,20 @@ class VoiceNotificationClass {
   
   playAudio() {
     if (!this.audioElement) return;
+    if (this.isPlaying) return;
     this.initAudioContext();
     if (this.audioCtx && this.audioCtx.state === 'suspended') {
       this.audioCtx.resume();
     }
     
+    this.isPlaying = true; // preemptively set to prevent multiple calls
     this.audioElement.play().then(() => {
-      this.isPlaying = true;
       const playBtn = document.getElementById('vn-play-btn');
       if (playBtn) playBtn.innerText = '⏸';
       this.updateWaveform();
       this.scheduleSignalInterference();
     }).catch(err => {
       console.warn("Audio autoplay blocked or failed, starting visual simulation anyway:", err);
-      this.isPlaying = true;
       const playBtn = document.getElementById('vn-play-btn');
       if (playBtn) playBtn.innerText = '⏸';
       this.updateWaveform();
@@ -1883,6 +1894,7 @@ class VoiceNotificationClass {
   updateWaveform() {
     if (!this.isPlaying) {
       this.drawFlatWaveform();
+      this.rAfId = null;
       return;
     }
     
@@ -1901,7 +1913,8 @@ class VoiceNotificationClass {
     }
     
     if (this.isPlaying) {
-      requestAnimationFrame(() => this.updateWaveform());
+      if (this.rAfId) cancelAnimationFrame(this.rAfId);
+      this.rAfId = requestAnimationFrame(() => this.updateWaveform());
     }
   }
   
@@ -2013,12 +2026,25 @@ class VoiceNotificationClass {
     }, delay);
   }
   
-  async trigger() {
+  trigger() {
     // Clear any previous scheduled trigger or active playback
     this.dismiss(true);
     
     // Initialize DOM if not done yet
-    await this.initDom();
+    this.initDom();
+    
+    // Unlock Audio Context immediately on click (synchronous user gesture)
+    this.initAudioContext();
+    if (this.audioCtx && this.audioCtx.state === 'suspended') {
+      this.audioCtx.resume();
+    }
+    
+    // Unlock AudioElement Autoplay
+    if (this.audioElement) {
+      this.audioElement.play().then(() => {
+        this.audioElement.pause();
+      }).catch(e => {});
+    }
     
     // Reset state & show panel with delay
     this.triggerTimer = setTimeout(() => {
@@ -2039,28 +2065,27 @@ class VoiceNotificationClass {
       if (typeContainer) {
         typeContainer.innerHTML = '';
         let tIndex = 0;
-        const typeInterval = setInterval(() => {
+        this.typeInterval = setInterval(() => {
           if (tIndex < typewriterText.length && document.getElementById('vn-panel').classList.contains('vn-shown')) {
             typeContainer.innerHTML += typewriterText.charAt(tIndex);
             tIndex++;
           } else {
-            clearInterval(typeInterval);
+            clearInterval(this.typeInterval);
           }
         }, 40);
       }
       
       // Flicker at 1.2s and then start audio
-      setTimeout(() => {
+      this.innerTriggerTimer = setTimeout(() => {
         if (!panel.classList.contains('vn-shown')) return;
         
         let fCount = 0;
-        const vnOverlayFlickerId = "vn-flicker"; // arbitrary variable reference
-        const flickerInterval = setInterval(() => {
+        this.flickerInterval = setInterval(() => {
           if (fCount < 6 && panel.classList.contains('vn-shown')) {
             panel.style.opacity = (fCount % 2 === 0) ? '0.3' : '1';
             fCount++;
           } else {
-            clearInterval(flickerInterval);
+            clearInterval(this.flickerInterval);
             panel.style.opacity = '1';
             
             // Switch to player view
@@ -2082,9 +2107,25 @@ class VoiceNotificationClass {
       clearTimeout(this.triggerTimer);
       this.triggerTimer = null;
     }
+    if (this.innerTriggerTimer) {
+      clearTimeout(this.innerTriggerTimer);
+      this.innerTriggerTimer = null;
+    }
+    if (this.flickerInterval) {
+      clearInterval(this.flickerInterval);
+      this.flickerInterval = null;
+    }
+    if (this.typeInterval) {
+      clearInterval(this.typeInterval);
+      this.typeInterval = null;
+    }
     if (this.interferenceTimer) {
       clearTimeout(this.interferenceTimer);
       this.interferenceTimer = null;
+    }
+    if (this.rAfId) {
+      cancelAnimationFrame(this.rAfId);
+      this.rAfId = null;
     }
     
     this.isPlaying = false;
