@@ -24,11 +24,26 @@ async function startServer() {
         throw new Error("Could not find audio URL in screenapp metadata payload");
       }
       
-      console.log("[Proxy] Redirecting to signed URL...");
-      res.redirect(302, audioUrl);
+      console.log("[Proxy] Downloading audio buffer...");
+      const audioRes = await fetch(audioUrl);
+      if (!audioRes.ok) {
+        throw new Error(`Google Storage returned status ${audioRes.status}`);
+      }
+      
+      const arrayBuffer = await audioRes.arrayBuffer();
+      const buffer = Buffer.from(arrayBuffer);
+      
+      // Set CORS and headers
+      res.setHeader("Access-Control-Allow-Origin", "*");
+      res.setHeader("Access-Control-Allow-Methods", "GET, HEAD, OPTIONS");
+      res.setHeader("Content-Type", audioRes.headers.get("Content-Type") || "audio/mpeg");
+      res.setHeader("Content-Length", buffer.length);
+      res.setHeader("Cache-Control", "public, max-age=86400");
+      
+      res.status(200).send(buffer);
     } catch (error: any) {
       console.error("[Proxy] Error fetching audio URL:", error.message);
-      res.status(500).send(`Failed to redirect secure audio: ${error.message}`);
+      res.status(500).send(`Failed to proxy secure audio: ${error.message}`);
     }
   });
 
