@@ -24,45 +24,11 @@ async function startServer() {
         throw new Error("Could not find audio URL in screenapp metadata payload");
       }
       
-      console.log("[Proxy] Streaming audio from signed URL...");
-      const audioRes = await fetch(audioUrl);
-      if (!audioRes.ok) {
-        throw new Error(`Google Storage returned status ${audioRes.status}`);
-      }
-      
-      // Set headers for audio streaming
-      res.setHeader("Content-Type", audioRes.headers.get("Content-Type") || "audio/mpeg");
-      const contentLength = audioRes.headers.get("Content-Length");
-      if (contentLength) {
-        res.setHeader("Content-Length", contentLength);
-      }
-      res.setHeader("Accept-Ranges", "bytes");
-      res.setHeader("Cache-Control", "no-cache");
-      
-      // Pipe Web ReadableStream to Node WritableStream
-      if (audioRes.body) {
-        const reader = audioRes.body.getReader();
-        const pump = async () => {
-          try {
-            const { done, value } = await reader.read();
-            if (done) {
-              res.end();
-              return;
-            }
-            res.write(Buffer.from(value));
-            pump();
-          } catch (err) {
-            console.error("[Proxy] Stream piping error:", err);
-            res.end();
-          }
-        };
-        await pump();
-      } else {
-        res.status(500).send("Audio body stream not available");
-      }
+      console.log("[Proxy] Redirecting to signed URL...");
+      res.redirect(302, audioUrl);
     } catch (error: any) {
-      console.error("[Proxy] Error fetching or streaming audio:", error.message);
-      res.status(500).send(`Failed to stream secure audio: ${error.message}`);
+      console.error("[Proxy] Error fetching audio URL:", error.message);
+      res.status(500).send(`Failed to redirect secure audio: ${error.message}`);
     }
   });
 

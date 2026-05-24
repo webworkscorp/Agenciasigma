@@ -1570,12 +1570,6 @@ $$('.w-cls').forEach(e=>e.onclick=function(){
   win.style.display='none';
   sfx.p();
   
-  if (win.id === 'm7') {
-    if (window.VoiceNotification) {
-      window.VoiceNotification.dismiss(true);
-    }
-  }
-  
   if (win.id === 'm-aud-player') {
     const aud = $('#m-aud-src');
     if (aud) {
@@ -1676,8 +1670,6 @@ window.openMod=(id)=>{
  if (window.VoiceNotification) {
    if (id === 'm7') {
      window.VoiceNotification.trigger();
-   } else {
-     window.VoiceNotification.dismiss(true);
    }
  }
  
