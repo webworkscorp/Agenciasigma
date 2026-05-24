@@ -1156,10 +1156,7 @@ const initTransmissionAudio = async () => {
     // Always instantiate HTML Audio element so it performs lifecycle and audio ends correctly
     transmissionAudio = new Audio();
     transmissionAudio.crossOrigin = "anonymous";
-    const resolvedUrl = await window.resolveAudioUrl("kNV5bPTxa5");
-    if (resolvedUrl) {
-      transmissionAudio.src = resolvedUrl;
-    }
+    transmissionAudio.src = "/api/transmission-audio?id=kNV5bPTxa5";
   } catch (e) {
     console.warn("Audio element initialization failed:", e);
   }
@@ -1462,8 +1459,8 @@ const startTransmissionSequence = () => {
   transmissionPhase = 'silent';
   phaseStartTime = Date.now();
   
-  setTimeout(() => {
-    initTransmissionAudio();
+  setTimeout(async () => {
+    await initTransmissionAudio();
     drawVisualizer();
     
     // Start Phase 2: Power Up
@@ -1612,19 +1609,16 @@ window.openImg = (src, name) => {
   sfx.b();
 };
 
-window.openAud = async (src, name) => {
+window.openAud = (src, name) => {
   const player = $('#m-aud-player');
   const aud = $('#m-aud-src');
   
-  // If the source is a screenapp web URL, resolve it dynamically
+  // If the source is a screenapp web URL, point to the proxy endpoint with the correct share ID
   let audioSource = src;
   if (src.includes('screenapp.io')) {
     const match = src.match(/\/app\/v\/([a-zA-Z0-9_\-]+)/);
     const id = match ? match[1] : 'JMxasnAJst';
-    const resolvedUrl = await window.resolveAudioUrl(id);
-    if (resolvedUrl) {
-      audioSource = resolvedUrl;
-    }
+    audioSource = `/api/transmission-audio?id=${id}`;
   }
   
   // Ensure we have an audio element (not an iframe)
@@ -1788,13 +1782,9 @@ class VoiceNotificationClass {
     // Create actual audio element
     this.audioElement = document.createElement('audio');
     this.audioElement.id = 'vn-audio';
+    this.audioElement.src = '/api/transmission-audio?id=JFKpeXK2NI';
     this.audioElement.crossOrigin = 'anonymous';
     this.audioElement.style.display = 'none';
-    
-    const resolvedUrl = await window.resolveAudioUrl("JFKpeXK2NI");
-    if (resolvedUrl) {
-      this.audioElement.src = resolvedUrl;
-    }
     
     document.body.appendChild(this.audioElement);
     
@@ -2023,12 +2013,12 @@ class VoiceNotificationClass {
     }, delay);
   }
   
-  trigger() {
+  async trigger() {
     // Clear any previous scheduled trigger or active playback
     this.dismiss(true);
     
     // Initialize DOM if not done yet
-    this.initDom();
+    await this.initDom();
     
     // Reset state & show panel with delay
     this.triggerTimer = setTimeout(() => {
